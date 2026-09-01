@@ -99,6 +99,7 @@ const SCHOOLS = [
   { name: "Jose de Diego Middle School", city: "Miami", county: "Miami-Dade", level: "middle", isADOM: false, type: "public" },
   { name: "Jose Marti MAST 6-12 Academy", city: "Hialeah", county: "Miami-Dade", level: "both", isADOM: false, type: "public" },
   { name: "JUST Arts and Management Charter Middle School", city: "Doral", county: "Miami-Dade", level: "middle", isADOM: false, type: "charter" },
+  { name: "Key Biscayne K-8 Center", city: "Key Biscayne", county: "Miami-Dade", level: "middle", isADOM: false, type: "public" },
   { name: "Key Point Academy", city: "Miami", county: "Miami-Dade", level: "middle", isADOM: false, type: "private" },
   { name: "Kinloch Park Middle School", city: "Miami", county: "Miami-Dade", level: "middle", isADOM: false, type: "public" },
   { name: "KIPP Courage Academy", city: "Miami", county: "Miami-Dade", level: "middle", isADOM: false, type: "charter" },
