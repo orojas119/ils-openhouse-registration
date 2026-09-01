@@ -91,7 +91,7 @@ app.http("submitOpenHouse", {
         IsADOMSchool: !!body.isADOMSchool,
         PowerSchoolNumber: body.powerSchoolNumber || "",
         AttendeeCount: Number(body.attendeeCount),
-        HeardAbout: body.heardAbout,
+        HeardAbout: body.heardAbout.join("; "),
         ParentSalutation: body.salutation,
         ParentFirstName: body.parentFirstName,
         ParentLastName: body.parentLastName,
