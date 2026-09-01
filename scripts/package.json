@@ -1,0 +1,8 @@
+{
+  "name": "openhouse-provisioning-scripts",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@azure/msal-node": "^2.13.1"
+  }
+}

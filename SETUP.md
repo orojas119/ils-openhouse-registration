@@ -85,22 +85,44 @@ this as authoritative):
   check, writes one SharePoint list item via `graph.js`. Not yet deployed or
   tested against a real SharePoint list.
 
-**Not yet done** (needs explicit go-ahead before touching any live/shared
-resource):
-1. Provision the `Open House Registrations` SharePoint list on `ilsforms`
-   via the device-code recipe in the playbook (§6) — column list still needs
-   finalizing to match the fields above (see suggested column names in
-   `submit.js`'s payload).
-2. Register/deploy the Azure Function App (`func-openhouse`, resource group
-   `rg-openhouse`, matching Driver MVR's standalone-Function-App shape rather
-   than SWA's managed backend) and wire `SUBMIT_URL` in `index.html` to the
-   real endpoint.
-3. Create the GitHub repo, push, enable GitHub Pages, and (optionally) bind a
-   custom subdomain (e.g. `openhouse.ilsroyals.com`) — no `CNAME` file exists
-   yet since no domain decision has been made.
-4. `az functionapp cors add` for the real allowed origins once the domain is
-   known (see Driver MVR gotcha #2 — CORS preflight is platform-level, not
-   in-code).
+**Provisioned 2026-08-31:**
+1. ✅ `Open House Registrations` SharePoint list created on `ilsforms` via the
+   device-code recipe (`scripts/provision-list.mjs`) — List ID
+   `a56759e2-08e0-44f2-a7ce-5bda2c94f119`. Required adding a delegated
+   `Sites.FullControl.All` permission to the shared iHelp Graph app first;
+   orojas ran `az ad app permission add` + `az ad app permission grant`
+   himself (NOT `admin-consent` — that command tries to consent to *all* of
+   the app's permissions at once, including its pre-existing application-level
+   ones, which only a Global Admin can touch, even though we only needed the
+   one new delegated scope — see playbook §3.1).
+2. ✅ `func-openhouse` Function App created (`rg-openhouse`, Linux, Node 22)
+   and its non-secret app settings + the list ID above are set. `SUBMIT_URL`
+   in `index.html` already points at it.
+3. ✅ GitHub repo created: `orojas119/ils-openhouse-registration`.
+4. ✅ CORS configured (`localhost:8935`, GitHub Pages, `openhouse.ilsroyals.com`).
+5. ✅ `CNAME` file added (`openhouse.ilsroyals.com`).
+
+**Still not done** — these specific actions get blocked by Claude Code's
+auto-mode classifier when attempted via tool calls (each touches
+shared/production state), so orojas has to run them himself:
+1. Create a new client secret on the iHelp Graph app for this Function
+   (`AZURE_AD_CLIENT_SECRET` app setting is still unset — Graph calls will
+   fail until this is done):
+   ```
+   az ad app credential reset --id b0128bc3-7e7d-4e1a-b8d8-24a045b85e72 --append --display-name "func-openhouse" --years 1 --query "password" -o tsv
+   az functionapp config appsettings set --name func-openhouse --resource-group rg-openhouse --settings "AZURE_AD_CLIENT_SECRET=<paste secret>"
+   ```
+2. Deploy the function code:
+   ```
+   cd api && func azure functionapp publish func-openhouse
+   ```
+3. Push to GitHub:
+   ```
+   git push -u origin main
+   ```
+4. Enable GitHub Pages (Settings → Pages → source: `main` / `/`) and confirm
+   DNS for `openhouse.ilsroyals.com` points at GitHub Pages (the `CNAME` file
+   alone doesn't create the DNS record).
 
 ## Local testing
 
