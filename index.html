@@ -70,11 +70,11 @@
   .card-sub { font-size: 13px; color: var(--gray-600); margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--gray-100); }
 
   /* FIELDS */
-  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px; }
   .field-row.single { grid-template-columns: 1fr; }
   .field-row.thirds { grid-template-columns: 1fr 1fr 1fr; }
-  @media (max-width: 600px) { .field-row, .field-row.thirds { grid-template-columns: 1fr; } }
-  .field { display: flex; flex-direction: column; gap: 5px; }
+  @media (max-width: 600px) { .field-row, .field-row.thirds { grid-template-columns: 1fr; gap: 20px; } }
+  .field { display: flex; flex-direction: column; gap: 8px; }
   .field.hidden-field { display: none; }
   .field label { font-size: 12.5px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: .5px; }
   .field label .req { color: var(--red); margin-left: 2px; }
@@ -84,13 +84,13 @@
   .field .hint { font-size: 12px; color: var(--gray-400); font-weight: 400; text-transform: none; letter-spacing: 0; }
   .field .err-msg { font-size: 12px; color: var(--red); display: none; }
   .field.has-error .err-msg { display: block; }
-  .divider { height: 1px; background: var(--gray-100); margin: 20px 0; }
+  .divider { height: 1px; background: var(--gray-100); margin: 8px 0 28px; }
 
   /* honeypot — off-screen, not display:none (some bots skip that but still fill hidden-but-rendered inputs; this keeps it out of the tab order and invisible either way) */
   .hp-field { position: absolute; left: -9999px; top: -9999px; }
 
   /* CHECKBOX GROUP (heard about) */
-  .check-group { display: flex; flex-direction: column; gap: 10px; }
+  .check-group { display: flex; flex-direction: column; gap: 12px; }
   .check-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--green-pale); border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition); }
   .check-item:hover { border-color: var(--green); }
   .check-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--green); cursor: pointer; flex-shrink: 0; }
