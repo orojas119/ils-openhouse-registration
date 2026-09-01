@@ -102,27 +102,37 @@ this as authoritative):
 4. ✅ CORS configured (`localhost:8935`, GitHub Pages, `openhouse.ilsroyals.com`).
 5. ✅ `CNAME` file added (`openhouse.ilsroyals.com`).
 
-**Still not done** — these specific actions get blocked by Claude Code's
-auto-mode classifier when attempted via tool calls (each touches
-shared/production state), so orojas has to run them himself:
-1. Create a new client secret on the iHelp Graph app for this Function
-   (`AZURE_AD_CLIENT_SECRET` app setting is still unset — Graph calls will
-   fail until this is done):
-   ```
-   az ad app credential reset --id b0128bc3-7e7d-4e1a-b8d8-24a045b85e72 --append --display-name "func-openhouse" --years 1 --query "password" -o tsv
-   az functionapp config appsettings set --name func-openhouse --resource-group rg-openhouse --settings "AZURE_AD_CLIENT_SECRET=<paste secret>"
-   ```
-2. Deploy the function code:
-   ```
-   cd api && func azure functionapp publish func-openhouse
-   ```
-3. Push to GitHub:
-   ```
-   git push -u origin main
-   ```
-4. Enable GitHub Pages (Settings → Pages → source: `main` / `/`) and confirm
-   DNS for `openhouse.ilsroyals.com` points at GitHub Pages (the `CNAME` file
-   alone doesn't create the DNS record).
+**Also done 2026-09-01:**
+6. ✅ Client secret created for `func-openhouse` (orojas ran the
+   `az ad app credential reset` himself; the printed value was set as
+   `AZURE_AD_CLIENT_SECRET`).
+7. ✅ Function code deployed (`func azure functionapp publish func-openhouse
+   --javascript` — the `--javascript` flag is required since there's no real
+   `local.settings.json` locally, only the gitignored `.example`).
+8. ✅ Pushed to GitHub, GitHub Pages enabled (`main` / `/`), custom domain
+   `openhouse.ilsroyals.com` set via the API (picked up the `CNAME` file
+   automatically).
+9. ✅ **Found and fixed a real bug during end-to-end testing:** Microsoft
+   Graph's `/items` write endpoint rejects array values for a multi-select
+   Choice column outright (`HeardAbout` was originally created with
+   `allowMultipleSelection: true`) — confirmed via direct Graph calls that a
+   plain string writes fine but the documented array format fails on both
+   POST and PATCH with a generic `invalidRequest` 400. Fixed by converting
+   the column to plain text (`scripts/fix-heardabout-column.mjs`) and joining
+   selections into a semicolon-delimited string in `submit.js` before
+   writing. **If a future ILS tool wants a true multi-select field written
+   via Graph, don't repeat this — store it as delimited text from the start.**
+10. ✅ Verified end-to-end against the live deployed Function + real
+    SharePoint list (test item created, fields confirmed correct, deleted
+    afterward).
+
+**One thing left — outside GitHub/Azure entirely:** `openhouse.ilsroyals.com`
+has no DNS record yet (`drivermvr.ilsroyals.com` resolves to
+`orojas119.github.io` via CNAME; `openhouse.ilsroyals.com` currently resolves
+to nothing). Whoever manages ilsroyals.com's DNS (likely wherever the Wix
+marketing site's DNS lives) needs to add the same kind of CNAME record
+pointing `openhouse` → `orojas119.github.io`. Until then, the live site is
+only reachable at `https://orojas119.github.io/ils-openhouse-registration/`.
 
 ## Local testing
 
