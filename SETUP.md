@@ -126,13 +126,10 @@ this as authoritative):
     SharePoint list (test item created, fields confirmed correct, deleted
     afterward).
 
-**One thing left — outside GitHub/Azure entirely:** `openhouse.ilsroyals.com`
-has no DNS record yet (`drivermvr.ilsroyals.com` resolves to
-`orojas119.github.io` via CNAME; `openhouse.ilsroyals.com` currently resolves
-to nothing). Whoever manages ilsroyals.com's DNS (likely wherever the Wix
-marketing site's DNS lives) needs to add the same kind of CNAME record
-pointing `openhouse` → `orojas119.github.io`. Until then, the live site is
-only reachable at `https://orojas119.github.io/ils-openhouse-registration/`.
+**DNS: done (2026-09-02).** `openhouse.ilsroyals.com` now has its CNAME
+record pointing at `orojas119.github.io`, matching `drivermvr.ilsroyals.com`.
+HTTPS certificate issued and enforced; verified `index.html`, `checkin.html`,
+and `admin.html` all load correctly and sign-in works over the real domain.
 
 ## Admin dashboard + self-service check-in (added 2026-09-02)
 
