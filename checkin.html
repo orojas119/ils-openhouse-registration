@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open House Check-In — Immaculata-La Salle High School</title>
+<link rel="icon" href="assets/crest.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green:       #004B23;
+    --green-mid:   #0a6b38;
+    --green-light: #e3ede7;
+    --green-pale:  #f2f7f4;
+    --gold:        #FFC20E;
+    --gold-dark:   #8a6d00;
+    --gold-light:  #fff8e1;
+    --red:         #b3261e;
+    --red-light:   #fdecea;
+    --gray-50:     #f7f7f5;
+    --gray-100:    #f3f4f6;
+    --gray-200:    #e5e7eb;
+    --gray-400:    #9ca3af;
+    --gray-600:    #4b5563;
+    --gray-800:    #1f2937;
+    --white:       #ffffff;
+    --shadow-sm:   0 1px 3px rgba(0,0,0,.08);
+    --shadow-md:   0 4px 16px rgba(0,75,35,.10);
+    --radius:      12px;
+    --radius-sm:   8px;
+    --transition:  all .2s ease;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Montserrat', sans-serif; background: var(--gray-50); color: var(--gray-800); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+
+  .site-header { background: var(--green); padding: 18px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.18); }
+  .header-crest { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; border: 2px solid var(--gold); flex-shrink: 0; background: var(--white); }
+  .header-crest img { width: 100%; height: 100%; object-fit: contain; }
+  .header-text { flex: 1; }
+  .header-org { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; color: var(--gold); line-height: 1.25; }
+  .header-title { font-size: 11.5px; color: rgba(255,255,255,.75); letter-spacing: .5px; text-transform: uppercase; margin-top: 1px; }
+
+  .container { max-width: 520px; margin: 0 auto; padding: 32px 16px 60px; }
+  .card { background: var(--white); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); }
+  .card-title { font-family: 'Poppins', sans-serif; font-size: 20px; font-weight: 700; color: var(--green); margin-bottom: 6px; }
+  .card-sub { font-size: 13.5px; color: var(--gray-600); margin-bottom: 22px; }
+
+  .search-row { display: flex; gap: 10px; }
+  .search-row input { flex: 1; padding: 14px 16px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 16px; outline: none; transition: var(--transition); }
+  .search-row input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,75,35,.1); }
+  .btn { padding: 14px 22px; border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: var(--transition); }
+  .btn-primary { background: var(--green); color: var(--white); }
+  .btn-primary:hover { background: var(--green-mid); }
+  .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+  .btn-ghost { background: var(--white); color: var(--gray-600); border: 1.5px solid var(--gray-200); width: 100%; margin-top: 16px; }
+  .btn-ghost:hover { background: var(--gray-50); }
+
+  .hint { font-size: 12.5px; color: var(--gray-400); margin-top: 10px; }
+  .error-banner { background: var(--red-light); border: 1px solid #f0b8b4; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13.5px; color: var(--red); margin-top: 14px; display: none; }
+  .error-banner.show { display: block; }
+
+  #results { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .result-card { border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; transition: var(--transition); }
+  .result-card:hover { border-color: var(--green); background: var(--green-pale); }
+  .result-name { font-weight: 700; color: var(--gray-800); font-size: 15px; }
+  .result-meta { font-size: 12.5px; color: var(--gray-600); margin-top: 3px; }
+  .result-badge { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--green-mid); background: var(--green-light); padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+  .no-results { text-align: center; color: var(--gray-400); font-size: 14px; padding: 20px 0; }
+
+  #confirm-screen, #success-screen { display: none; }
+  .confirm-detail { background: var(--green-pale); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 20px; }
+  .confirm-name { font-family: 'Poppins', sans-serif; font-size: 19px; font-weight: 700; color: var(--green); margin-bottom: 8px; }
+  .confirm-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 4px 0; }
+  .confirm-row .cl { color: var(--gray-600); }
+  .confirm-row .cv { color: var(--gray-800); font-weight: 600; }
+
+  .success-icon { width: 72px; height: 72px; border-radius: 50%; background: var(--green-light); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 34px; margin: 0 auto 20px; }
+  .success-title { font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 700; color: var(--green); margin-bottom: 10px; text-align: center; }
+  .success-sub { font-size: 14.5px; color: var(--gray-600); text-align: center; margin-bottom: 8px; line-height: 1.6; }
+  .success-note { font-size: 12.5px; color: var(--gray-400); text-align: center; margin-top: 16px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-crest"><img src="assets/crest.png" alt="Immaculata-La Salle High School crest"></div>
+  <div class="header-text">
+    <div class="header-org">Immaculata-La Salle High School</div>
+    <div class="header-title">Open House Check-In</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="card" id="search-screen">
+    <div class="card-title">Welcome!</div>
+    <div class="card-sub">Enter the student's last name to find your registration.</div>
+    <div class="search-row">
+      <input type="text" id="search-input" placeholder="Last name" autocomplete="off" autocapitalize="words">
+      <button class="btn btn-primary" id="search-btn" onclick="doSearch()">Search</button>
+    </div>
+    <div class="error-banner" id="error-banner"></div>
+    <div id="results"></div>
+  </div>
+
+  <div class="card" id="confirm-screen">
+    <div class="card-title">Is this you?</div>
+    <div class="card-sub">Please confirm before completing check-in.</div>
+    <div class="confirm-detail" id="confirm-detail"></div>
+    <button class="btn btn-primary" id="confirm-btn" style="width:100%;" onclick="completeCheckIn()">Complete Check-In</button>
+    <button class="btn btn-ghost" onclick="backToSearch()">← Not me, go back</button>
+  </div>
+
+  <div class="card" id="success-screen">
+    <div class="success-icon">✓</div>
+    <div class="success-title" id="success-title">You're checked in!</div>
+    <div class="success-sub" id="success-sub"></div>
+    <div class="success-note">Show this screen to a staff member at the door.</div>
+    <button class="btn btn-ghost" onclick="backToSearch()">Check in someone else</button>
+  </div>
+
+</div>
+
+<script>
+const API_BASE = "https://func-openhouse.azurewebsites.net/api";
+let selected = null;
+
+function showScreen(id) {
+  ["search-screen", "confirm-screen", "success-screen"].forEach((s) => {
+    document.getElementById(s).style.display = s === id ? "block" : "none";
+  });
+}
+
+function showError(msg) {
+  const el = document.getElementById("error-banner");
+  el.textContent = msg;
+  el.classList.add("show");
+}
+function clearError() {
+  document.getElementById("error-banner").classList.remove("show");
+}
+
+async function doSearch() {
+  const q = document.getElementById("search-input").value.trim();
+  const resultsEl = document.getElementById("results");
+  clearError();
+  resultsEl.innerHTML = "";
+  if (q.length < 2) {
+    showError("Please enter at least 2 letters of the last name.");
+    return;
+  }
+
+  const btn = document.getElementById("search-btn");
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/checkin/search?q=${encodeURIComponent(q)}`);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    if (data.results.length === 0) {
+      resultsEl.innerHTML = `<div class="no-results">No registration found for "${q}". Check the spelling, or ask a staff member for help.</div>`;
+      return;
+    }
+    resultsEl.innerHTML = data.results.map((r, i) => `
+      <div class="result-card" onclick="selectResult(${i})">
+        <div>
+          <div class="result-name">${r.studentFirstName} ${r.studentLastName}</div>
+          <div class="result-meta">${r.gradeLevel || ''}${r.schoolAttending ? ' · ' + r.schoolAttending : ''}</div>
+        </div>
+        ${r.checkedIn ? '<span class="result-badge">Checked In</span>' : ''}
+      </div>`).join("");
+    window.__searchResults = data.results;
+  } catch (err) {
+    console.error(err);
+    showError("Something went wrong searching. Please try again or ask a staff member for help.");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function selectResult(i) {
+  selected = window.__searchResults[i];
+  document.getElementById("confirm-detail").innerHTML = `
+    <div class="confirm-name">${selected.studentFirstName} ${selected.studentLastName}</div>
+    <div class="confirm-row"><span class="cl">Grade</span><span class="cv">${selected.gradeLevel || '—'}</span></div>
+    <div class="confirm-row"><span class="cl">School</span><span class="cv">${selected.schoolAttending || '—'}</span></div>
+    <div class="confirm-row"><span class="cl">Party Size</span><span class="cv">${selected.attendeeCount || '—'}</span></div>`;
+  document.getElementById("confirm-btn").textContent = selected.checkedIn ? "Already Checked In — Tap to Confirm" : "Complete Check-In";
+  showScreen("confirm-screen");
+}
+
+async function completeCheckIn() {
+  const btn = document.getElementById("confirm-btn");
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/checkin/complete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: selected.id }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    document.getElementById("success-title").textContent = data.alreadyCheckedIn ? "You're already checked in!" : "You're checked in!";
+    document.getElementById("success-sub").textContent = `Welcome, ${data.studentFirstName}! We're so glad you're here.`;
+    showScreen("success-screen");
+  } catch (err) {
+    console.error(err);
+    btn.disabled = false;
+    showScreen("search-screen");
+    showError("Something went wrong completing check-in. Please try again or ask a staff member for help.");
+  }
+}
+
+function backToSearch() {
+  selected = null;
+  document.getElementById("search-input").value = "";
+  document.getElementById("results").innerHTML = "";
+  clearError();
+  showScreen("search-screen");
+}
+
+document.getElementById("search-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") doSearch();
+});
+</script>
+</body>
+</html>

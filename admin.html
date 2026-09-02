@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open House Admin — Immaculata-La Salle High School</title>
+<link rel="icon" href="assets/crest.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.0/lib/msal-browser.min.js"></script>
+<script src="assets/qrcode.min.js"></script>
+<style>
+  :root {
+    --green:       #004B23;
+    --green-mid:   #0a6b38;
+    --green-light: #e3ede7;
+    --green-pale:  #f2f7f4;
+    --gold:        #FFC20E;
+    --gold-dark:   #8a6d00;
+    --gold-light:  #fff8e1;
+    --red:         #b3261e;
+    --red-light:   #fdecea;
+    --gray-50:     #f7f7f5;
+    --gray-100:    #f3f4f6;
+    --gray-200:    #e5e7eb;
+    --gray-400:    #9ca3af;
+    --gray-600:    #4b5563;
+    --gray-800:    #1f2937;
+    --white:       #ffffff;
+    --shadow-sm:   0 1px 3px rgba(0,0,0,.08);
+    --shadow-md:   0 4px 16px rgba(0,75,35,.10);
+    --shadow-lg:   0 12px 40px rgba(0,75,35,.16);
+    --radius:      12px;
+    --radius-sm:   8px;
+    --transition:  all .2s ease;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Montserrat', sans-serif; background: var(--gray-50); color: var(--gray-800); min-height: 100vh; font-size: 14.5px; line-height: 1.6; }
+
+  /* AUTH LOADING / LOGIN */
+  #auth-loading { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--green); }
+  .auth-spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.2); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #login-screen { min-height: 100vh; background: var(--green); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .login-card { background: rgba(255,255,255,.98); border-radius: 20px; padding: 48px 44px; max-width: 440px; width: 100%; text-align: center; box-shadow: 0 24px 80px rgba(0,0,0,.3); animation: fadeUp .4s ease; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  .login-crest { width: 84px; height: 84px; margin: 0 auto 18px; border-radius: 50%; overflow: hidden; box-shadow: 0 8px 24px rgba(0,75,35,.35); border: 3px solid var(--gold); background: var(--white); }
+  .login-crest img { width: 100%; height: 100%; object-fit: contain; }
+  .login-org { font-family: 'Poppins', sans-serif; font-size: 19px; font-weight: 700; color: var(--green); margin-bottom: 4px; }
+  .login-portal { font-size: 12.5px; color: var(--gray-400); text-transform: uppercase; letter-spacing: .8px; font-weight: 600; margin-bottom: 32px; }
+  .login-divider { height: 1px; background: var(--gray-100); margin: 0 0 28px; }
+  .login-prompt { font-size: 15px; color: var(--gray-600); margin-bottom: 24px; }
+  .btn-microsoft { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 13px 20px; background: #0078d4; color: white; border: none; border-radius: var(--radius-sm); font-size: 15px; font-weight: 600; cursor: pointer; transition: var(--transition); }
+  .btn-microsoft:hover { background: #006bbf; }
+  .btn-microsoft:disabled { opacity: .6; cursor: not-allowed; }
+  .ms-logo { width: 20px; height: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; flex-shrink: 0; }
+  .ms-logo span { display: block; border-radius: 1px; }
+  .ms-logo .q1 { background: #f25022; } .ms-logo .q2 { background: #7fba00; }
+  .ms-logo .q3 { background: #00a4ef; } .ms-logo .q4 { background: #ffb900; }
+  .login-error { background: var(--red-light); border: 1px solid #f0b8b4; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--red); margin-top: 16px; display: none; text-align: left; }
+  .login-error.show { display: block; }
+
+  #app-shell { display: none; }
+
+  /* HEADER */
+  .site-header { background: var(--green); padding: 14px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.18); position: sticky; top: 0; z-index: 100; }
+  .header-crest { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; border: 2px solid var(--gold); flex-shrink: 0; background: var(--white); }
+  .header-crest img { width: 100%; height: 100%; object-fit: contain; }
+  .header-text { flex: 1; }
+  .header-org { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 700; color: var(--gold); line-height: 1.2; }
+  .header-title { font-size: 11px; color: rgba(255,255,255,.65); letter-spacing: .5px; text-transform: uppercase; }
+  .header-user { display: flex; align-items: center; gap: 10px; }
+  .user-name { font-size: 12.5px; font-weight: 600; color: white; }
+  .btn-signout { padding: 6px 12px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 6px; color: rgba(255,255,255,.8); font-size: 12px; font-weight: 500; cursor: pointer; }
+  .btn-signout:hover { background: rgba(255,255,255,.18); color: white; }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 24px; }
+  @media (max-width: 1000px) { .stats-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card { background: var(--white); border-radius: var(--radius-sm); padding: 16px 18px; border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); }
+  .stat-value { font-family: 'Poppins', sans-serif; font-size: 24px; font-weight: 700; color: var(--green); }
+  .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--gray-400); margin-top: 2px; }
+
+  /* TOOLBAR */
+  .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .toolbar input { flex: 1; min-width: 200px; padding: 11px 14px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 14px; outline: none; }
+  .toolbar input:focus { border-color: var(--green); }
+  .btn { padding: 10px 18px; border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 13.5px; font-weight: 600; cursor: pointer; border: none; transition: var(--transition); white-space: nowrap; }
+  .btn-primary { background: var(--green); color: var(--white); }
+  .btn-primary:hover { background: var(--green-mid); }
+  .btn-ghost { background: var(--white); color: var(--gray-600); border: 1.5px solid var(--gray-200); }
+  .btn-ghost:hover { background: var(--gray-50); }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+  /* TABLE */
+  .table-wrap { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-200); box-shadow: var(--shadow-sm); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; padding: 12px 14px; background: var(--green-pale); color: var(--green); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; position: sticky; top: 0; }
+  td { padding: 10px 14px; border-top: 1px solid var(--gray-100); white-space: nowrap; }
+  tr.checked-in { background: var(--green-pale); }
+  .badge { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 10px; }
+  .badge-adom { background: var(--gold-light); color: var(--gold-dark); }
+  .badge-walkin { background: var(--gray-100); color: var(--gray-600); }
+  .badge-checked { background: var(--green-light); color: var(--green-mid); }
+  .row-name { cursor: pointer; font-weight: 600; color: var(--green); }
+  .row-name:hover { text-decoration: underline; }
+  .empty-state { text-align: center; padding: 40px; color: var(--gray-400); }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: var(--white); border-radius: var(--radius); padding: 28px; max-width: 520px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
+  .modal-title { font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 700; color: var(--green); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .modal-close { cursor: pointer; color: var(--gray-400); font-size: 20px; background: none; border: none; }
+  .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-100); font-size: 13.5px; }
+  .detail-row .dl { color: var(--gray-600); }
+  .detail-row .dv { font-weight: 600; text-align: right; }
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .field label { font-size: 11.5px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: .4px; }
+  .field input, .field select { padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 14.5px; outline: none; }
+  .field-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  #qr-container { display: flex; justify-content: center; padding: 20px; background: var(--white); }
+  .qr-url { text-align: center; font-size: 12px; color: var(--gray-400); word-break: break-all; margin-top: 10px; }
+  .modal-error { background: var(--red-light); color: var(--red); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-bottom: 12px; display: none; }
+  .modal-error.show { display: block; }
+</style>
+</head>
+<body>
+
+<div id="auth-loading"><div class="auth-spinner"></div></div>
+
+<div id="login-screen" style="display:none;">
+  <div class="login-card">
+    <div class="login-crest"><img src="assets/crest.png" alt="Immaculata-La Salle High School crest"></div>
+    <div class="login-org">Immaculata-La Salle High School</div>
+    <div class="login-portal">Open House Admin</div>
+    <div class="login-divider"></div>
+    <div class="login-prompt">Sign in with your @ilsroyals.com account to access the check-in dashboard.</div>
+    <button class="btn-microsoft" id="signin-btn" onclick="signIn()">
+      <div class="ms-logo"><span class="q1"></span><span class="q2"></span><span class="q3"></span><span class="q4"></span></div>
+      Sign in with Microsoft
+    </button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<div id="app-shell">
+  <header class="site-header">
+    <div class="header-crest"><img src="assets/crest.png" alt="Immaculata-La Salle High School crest"></div>
+    <div class="header-text">
+      <div class="header-org">Immaculata-La Salle High School</div>
+      <div class="header-title">Open House Admin</div>
+    </div>
+    <div class="header-user">
+      <span class="user-name" id="header-name"></span>
+      <button class="btn-signout" onclick="signOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <div class="toolbar">
+      <input type="text" id="filter-input" placeholder="Search by name or school…" oninput="renderTable()">
+      <button class="btn btn-ghost" onclick="loadRegistrations()">↻ Refresh</button>
+      <button class="btn btn-ghost" onclick="openQrModal()">Show QR Code</button>
+      <button class="btn btn-primary" onclick="openWalkInModal()">+ Walk-In Registration</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Last Name</th><th>First Name</th><th>Grade</th><th>School</th>
+            <th>Guests</th><th>Heard About</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div class="empty-state" id="empty-state" style="display:none;">No registrations match your search.</div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-title"><span>Registration Details</span><button class="modal-close" onclick="closeModal('detail-modal')">&times;</button></div>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<!-- WALK-IN MODAL -->
+<div class="modal-overlay" id="walkin-modal">
+  <div class="modal">
+    <div class="modal-title"><span>Walk-In Registration</span><button class="modal-close" onclick="closeModal('walkin-modal')">&times;</button></div>
+    <div class="modal-error" id="walkin-error"></div>
+    <div class="field-row2">
+      <div class="field"><label>First Name*</label><input type="text" id="wi-first"></div>
+      <div class="field"><label>Last Name*</label><input type="text" id="wi-last"></div>
+    </div>
+    <div class="field-row2">
+      <div class="field">
+        <label>Grade Level*</label>
+        <select id="wi-grade">
+          <option value="">- Select -</option>
+          <option>5th Grade</option><option>6th Grade</option><option>7th Grade</option>
+          <option>8th Grade</option><option>9th Grade</option><option>10th Grade</option><option>11th Grade</option>
+        </select>
+      </div>
+      <div class="field"><label># Attending*</label><input type="number" id="wi-guests" min="1"></div>
+    </div>
+    <div class="field"><label>School Attending</label><input type="text" id="wi-school"></div>
+    <div class="field-row2">
+      <div class="field"><label>Parent First Name</label><input type="text" id="wi-pfirst"></div>
+      <div class="field"><label>Parent Last Name</label><input type="text" id="wi-plast"></div>
+    </div>
+    <div class="field"><label>Parent Email</label><input type="email" id="wi-email"></div>
+    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitWalkIn()" id="wi-submit-btn">Add &amp; Check In</button>
+  </div>
+</div>
+
+<!-- QR MODAL -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal">
+    <div class="modal-title"><span>Self Check-In QR Code</span><button class="modal-close" onclick="closeModal('qr-modal')">&times;</button></div>
+    <div id="qr-container"></div>
+    <div class="qr-url" id="qr-url"></div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────
+const API_BASE = "https://func-openhouse.azurewebsites.net/api";
+const CHECKIN_URL = window.location.origin + window.location.pathname.replace(/admin\.html$/, "checkin.html");
+
+const MSAL_CONFIG = {
+  auth: {
+    clientId: "c8cb8dd4-153c-428b-aca0-c2c3e8a74f5b",
+    authority: "https://login.microsoftonline.com/8109e949-d281-46a4-af75-b18087925bf4",
+    redirectUri: window.location.origin + window.location.pathname,
+    navigateToLoginRequestUrl: true,
+  },
+  cache: { cacheLocation: "sessionStorage", storeAuthStateInCookie: true }
+};
+const LOGIN_REQUEST = { scopes: ["openid", "profile", "email"] };
+const API_REQUEST = { scopes: ["api://c8cb8dd4-153c-428b-aca0-c2c3e8a74f5b/access_as_user"] };
+
+let msalInstance;
+let allRegistrations = [];
+
+// ─── AUTH ─────────────────────────────────────────────────────────
+async function initAuth() {
+  try {
+    msalInstance = new msal.PublicClientApplication(MSAL_CONFIG);
+    await msalInstance.initialize();
+
+    const redirectResult = await msalInstance.handleRedirectPromise();
+    if (redirectResult && redirectResult.account) {
+      await loadUserAndShowApp(redirectResult.account);
+      return;
+    }
+    const accounts = msalInstance.getAllAccounts();
+    if (accounts.length > 0) {
+      await loadUserAndShowApp(accounts[0]);
+    } else {
+      showLoginScreen();
+    }
+  } catch (err) {
+    console.error("Auth init error:", err);
+    showLoginScreen();
+  }
+}
+
+async function signIn() {
+  const btn = document.getElementById('signin-btn');
+  btn.disabled = true;
+  btn.textContent = 'Redirecting to Microsoft…';
+  try {
+    await msalInstance.loginRedirect(LOGIN_REQUEST);
+  } catch (err) {
+    console.error("Login error:", err);
+    btn.disabled = false;
+    btn.innerHTML = `<div class="ms-logo"><span class="q1"></span><span class="q2"></span><span class="q3"></span><span class="q4"></span></div> Sign in with Microsoft`;
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = '⚠ Sign-in failed. Please try again.';
+    errEl.classList.add('show');
+  }
+}
+
+async function getApiToken() {
+  const account = msalInstance.getAllAccounts()[0];
+  try {
+    return (await msalInstance.acquireTokenSilent({ ...API_REQUEST, account })).accessToken;
+  } catch {
+    return (await msalInstance.acquireTokenPopup(API_REQUEST)).accessToken;
+  }
+}
+
+async function loadUserAndShowApp(account) {
+  document.getElementById('header-name').textContent = account.name || account.username;
+  showApp();
+  await loadRegistrations();
+}
+
+function signOut() {
+  msalInstance.logoutRedirect();
+}
+
+function showLoginScreen() {
+  document.getElementById('auth-loading').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+function showApp() {
+  document.getElementById('auth-loading').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'block';
+}
+
+// ─── DATA ─────────────────────────────────────────────────────────
+async function apiFetch(path, init = {}) {
+  const token = await getApiToken();
+  const headers = new Headers(init.headers);
+  headers.set("x-app-access-token", token);
+  return fetch(`${API_BASE}${path}`, { ...init, headers });
+}
+
+async function loadRegistrations() {
+  try {
+    const res = await apiFetch("/staff/registrations");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    allRegistrations = data.registrations;
+    renderStats();
+    renderTable();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to load registrations. Try refreshing.");
+  }
+}
+
+function renderStats() {
+  const total = allRegistrations.length;
+  const checkedIn = allRegistrations.filter(r => r.CheckedIn).length;
+  const totalGuests = allRegistrations.reduce((s, r) => s + (Number(r.AttendeeCount) || 0), 0);
+  const guestsCheckedIn = allRegistrations.filter(r => r.CheckedIn).reduce((s, r) => s + (Number(r.AttendeeCount) || 0), 0);
+  const notYetArrived = total - checkedIn;
+  const avgGuests = total ? (totalGuests / total).toFixed(1) : "0.0";
+
+  const stats = [
+    { label: "Registered", value: total },
+    { label: "Checked In", value: checkedIn },
+    { label: "Not Yet Arrived", value: notYetArrived },
+    { label: "Total Guests Registered", value: totalGuests },
+    { label: "Guests Checked In", value: guestsCheckedIn },
+    { label: "Avg Guests / Student", value: avgGuests },
+  ];
+  document.getElementById('stats-grid').innerHTML = stats.map(s => `
+    <div class="stat-card"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join("");
+}
+
+function renderTable() {
+  const q = document.getElementById('filter-input').value.trim().toLowerCase();
+  const filtered = allRegistrations.filter(r => {
+    if (!q) return true;
+    const hay = `${r.StudentFirstName} ${r.StudentLastName} ${r.SchoolAttending}`.toLowerCase();
+    return hay.includes(q);
+  }).sort((a, b) => (a.StudentLastName || '').localeCompare(b.StudentLastName || ''));
+
+  document.getElementById('empty-state').style.display = filtered.length ? 'none' : 'block';
+  document.getElementById('table-body').innerHTML = filtered.map(r => `
+    <tr class="${r.CheckedIn ? 'checked-in' : ''}">
+      <td><span class="row-name" onclick="openDetailModal('${r.id}')">${r.StudentLastName || ''}</span></td>
+      <td>${r.StudentFirstName || ''}</td>
+      <td>${r.GradeLevel || ''}</td>
+      <td>${r.SchoolAttending || ''} ${r.IsADOMSchool ? '<span class="badge badge-adom">ADOM</span>' : ''}</td>
+      <td>${r.AttendeeCount ?? ''}</td>
+      <td>${r.HeardAbout || ''}</td>
+      <td>
+        ${r.CheckedIn ? '<span class="badge badge-checked">✓ Checked In</span>' : ''}
+        ${r.IsWalkIn ? '<span class="badge badge-walkin">Walk-In</span>' : ''}
+      </td>
+      <td><button class="btn btn-ghost btn-sm" onclick="toggleCheckIn('${r.id}', ${!r.CheckedIn})">${r.CheckedIn ? 'Undo' : 'Check In'}</button></td>
+    </tr>`).join("");
+}
+
+async function toggleCheckIn(id, newState) {
+  try {
+    const res = await apiFetch(`/staff/registrations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ CheckedIn: newState }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const item = allRegistrations.find(r => r.id === id);
+    if (item) item.CheckedIn = newState;
+    renderStats();
+    renderTable();
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update check-in status.");
+  }
+}
+
+// ─── DETAIL MODAL ─────────────────────────────────────────────────
+function openDetailModal(id) {
+  const r = allRegistrations.find(x => x.id === id);
+  if (!r) return;
+  const rows = [
+    ["Student", `${r.StudentFirstName || ''} ${r.StudentMiddleName || ''} ${r.StudentLastName || ''}`],
+    ["Grade", r.GradeLevel], ["Date of Birth", r.DateOfBirth ? r.DateOfBirth.slice(0, 10) : ''], ["Gender", r.Gender],
+    ["School Attending", r.SchoolAttending], ["ADOM School", r.IsADOMSchool ? 'Yes' : 'No'],
+    ["PowerSchool #", r.PowerSchoolNumber], ["Attended Before", r.AttendedBefore],
+    ["If So, When", r.AttendedWhenYear], ["# Attending", r.AttendeeCount], ["Heard About", r.HeardAbout],
+    ["Parent", `${r.ParentSalutation || ''} ${r.ParentFirstName || ''} ${r.ParentLastName || ''}`],
+    ["Address", `${r.ParentAddress || ''}, ${r.ParentCity || ''}, ${r.ParentState || ''} ${r.ParentZip || ''}`],
+    ["Home / Cell / Office", `${r.ParentHomePhone || ''} / ${r.ParentCellPhone || ''} / ${r.ParentOfficePhone || ''}`],
+    ["Email", r.ParentEmail],
+    ["Checked In", r.CheckedIn ? `Yes — ${r.CheckedInAt ? new Date(r.CheckedInAt).toLocaleString() : ''}` : 'No'],
+    ["Walk-In", r.IsWalkIn ? 'Yes' : 'No'], ["Submitted", r.SubmittedAt],
+  ];
+  document.getElementById('detail-content').innerHTML = rows.map(([l, v]) =>
+    `<div class="detail-row"><span class="dl">${l}</span><span class="dv">${v || '—'}</span></div>`).join("");
+  document.getElementById('detail-modal').classList.add('show');
+}
+
+// ─── WALK-IN MODAL ────────────────────────────────────────────────
+function openWalkInModal() {
+  ['wi-first','wi-last','wi-grade','wi-guests','wi-school','wi-pfirst','wi-plast','wi-email'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('walkin-error').classList.remove('show');
+  document.getElementById('walkin-modal').classList.add('show');
+}
+
+async function submitWalkIn() {
+  const v = (id) => document.getElementById(id).value.trim();
+  const payload = {
+    studentFirstName: v('wi-first'), studentLastName: v('wi-last'),
+    gradeLevel: v('wi-grade'), attendeeCount: v('wi-guests'),
+    schoolAttending: v('wi-school'),
+    parentFirstName: v('wi-pfirst'), parentLastName: v('wi-plast'), email: v('wi-email'),
+  };
+  if (!payload.studentFirstName || !payload.studentLastName || !payload.gradeLevel || !payload.attendeeCount) {
+    const el = document.getElementById('walkin-error');
+    el.textContent = 'First name, last name, grade, and # attending are required.';
+    el.classList.add('show');
+    return;
+  }
+  const btn = document.getElementById('wi-submit-btn');
+  btn.disabled = true;
+  try {
+    const res = await apiFetch("/staff/registrations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    closeModal('walkin-modal');
+    await loadRegistrations();
+  } catch (err) {
+    console.error(err);
+    const el = document.getElementById('walkin-error');
+    el.textContent = 'Something went wrong adding this walk-in. Please try again.';
+    el.classList.add('show');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ─── QR MODAL ─────────────────────────────────────────────────────
+function openQrModal() {
+  const qr = qrcode(0, 'M');
+  qr.addData(CHECKIN_URL);
+  qr.make();
+  document.getElementById('qr-container').innerHTML = qr.createSvgTag(6);
+  document.getElementById('qr-url').textContent = CHECKIN_URL;
+  document.getElementById('qr-modal').classList.add('show');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+initAuth();
+</script>
+</body>
+</html>

@@ -61,4 +61,36 @@ async function createRegistrationItem(fields) {
   return res.json();
 }
 
-module.exports = { createRegistrationItem };
+// Fetches every item's fields, following @odata.nextLink pagination — the
+// list is a few hundred rows at most (one school's Open House), so pulling
+// it all in and filtering/sorting in the Function is simpler and fast enough
+// compared to building out Graph $filter queries against non-indexed columns.
+async function listRegistrationItems() {
+  const items = [];
+  let path = `${listBase()}/items?expand=fields&$top=200`;
+  while (path) {
+    const res = await graphFetch(path);
+    const page = await res.json();
+    for (const item of page.value) items.push({ id: item.id, ...item.fields });
+    const nextLink = page["@odata.nextLink"];
+    path = nextLink ? nextLink.replace(GRAPH_BASE, "") : null;
+  }
+  return items;
+}
+
+async function getRegistrationItem(id) {
+  const res = await graphFetch(`${listBase()}/items/${id}?expand=fields`);
+  const item = await res.json();
+  return { id: item.id, ...item.fields };
+}
+
+async function updateRegistrationItem(id, fields) {
+  const res = await graphFetch(`${listBase()}/items/${id}/fields`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fields),
+  });
+  return res.json();
+}
+
+module.exports = { createRegistrationItem, listRegistrationItems, getRegistrationItem, updateRegistrationItem };

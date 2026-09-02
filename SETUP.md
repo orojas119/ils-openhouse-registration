@@ -134,11 +134,82 @@ marketing site's DNS lives) needs to add the same kind of CNAME record
 pointing `openhouse` → `orojas119.github.io`. Until then, the live site is
 only reachable at `https://orojas119.github.io/ils-openhouse-registration/`.
 
+## Admin dashboard + self-service check-in (added 2026-09-02)
+
+Modeled after morelle's existing "2025-26 Open House Check In.xlsx" front-desk
+spreadsheet (PreRegistered tab: roster + "Student is here?" check-in column +
+live stats), but check-in itself is **self-service** per orojas — families
+scan a QR code and check themselves in rather than staff doing it manually.
+
+**Two new pages:**
+- `checkin.html` — public, no sign-in. Search by last name → shows only
+  safe-for-public fields (first/last name, grade, school, party size) to
+  confirm identity → "Complete Check-In" → success screen to show staff.
+  Idempotent (re-scanning/double-tapping doesn't error or reset the time).
+- `admin.html` — sign-in gated (new dedicated Entra app, see below).
+  Stats cards (Registered, Checked In, Not Yet Arrived, Total/Checked-In
+  Guests, Avg Guests/Student), searchable roster table with a manual
+  check-in/undo toggle (for edge cases where self-checkin fails) and a
+  click-through detail modal with full parent contact info, a walk-in
+  quick-add form (flags `IsWalkIn`, auto-checks-in), and a "Show QR Code"
+  button that renders a QR (vendored `assets/qrcode.min.js`, MIT-licensed
+  kazuhikoarase/qrcode-generator — no runtime CDN dependency) pointing at
+  `checkin.html` on whichever domain it's viewed from.
+
+**New SharePoint columns** (`scripts/add-checkin-columns.mjs`): `CheckedIn`
+(Yes/No), `CheckedInAt` (date), `IsWalkIn` (Yes/No).
+
+**New backend endpoints** on `func-openhouse`:
+- `GET/POST /api/staff/registrations` — admin-only (list all / walk-in
+  create). **Route is `staff/*`, not `admin/*`** — see the gotcha below.
+- `PATCH /api/staff/registrations/{id}` — admin-only (edit/check-in toggle).
+- `GET /api/checkin/search?q=`, `POST /api/checkin/complete` — public,
+  IP-rate-limited (`api/src/lib/ratelimit.js`, in-memory, best-effort only —
+  Consumption-plan instances are ephemeral, revisit if this ever needs to
+  survive real abuse).
+
+**Admin dashboard sign-in app** — `ILS-OpenHouse-Admin-WebAuth`
+- App (client) ID: `c8cb8dd4-153c-428b-aca0-c2c3e8a74f5b`, tenant
+  `8109e949-d281-46a4-af75-b18087925bf4` (dedicated app, separate from the
+  iHelp Graph data app, per playbook §9).
+- SPA redirect URIs: `https://openhouse.ilsroyals.com/admin.html`,
+  `https://orojas119.github.io/ils-openhouse-registration/admin.html`,
+  `http://localhost:8935/admin.html`.
+- Exposes its own API scope `api://c8cb8dd4-153c-428b-aca0-c2c3e8a74f5b/access_as_user`
+  (`requestedAccessTokenVersion: 2` set explicitly — see
+  [[az-ad-app-create-v1-token-bug]]). Backend validates this audience+scope
+  via `api/src/lib/auth.js` (jose + JWKS), then checks the caller's email
+  against `ADMIN_EMAILS` — a hardcoded allowlist, not SharePoint membership
+  (playbook §9's in-app admin gate convention).
+- **Enterprise Application restricted via `appRoleAssignmentRequired: true`**,
+  explicitly assigned to `orojas@ilsroyals.com` and `morelle@ilsroyals.com`
+  only (confirmed with orojas 2026-09-02) — anyone else's Microsoft sign-in
+  attempt is rejected before reaching the app.
+- Creating this app registration (new app, not modifying the shared iHelp
+  app) was **not** blocked by Claude Code's auto-mode classifier, unlike
+  modifying the shared app's permissions/secrets — only touching genuinely
+  shared/production infra seems to trigger that block.
+
+**Gotcha hit and fixed:** the admin routes were originally `admin/registrations`
+and 404'd on every real request (GET *and* POST) with no function-runtime
+response — bare platform `Kestrel` 404, even though `func function list`
+showed the route registered correctly and OPTIONS preflight succeeded fine
+(OPTIONS is always platform-intercepted regardless of whether the route
+exists, so it can't be used to sanity-check a route). This is the same
+symptom as [[swa-reserved-admin-route]], previously thought to be Azure
+Static Web Apps-specific — **confirmed here on a standalone Function App,
+so it's not SWA-only.** Renamed the route segment from `admin` to `staff`
+and it worked immediately, no other change. Folded into
+[[ils-swa-playbook]] §3.7 as a general Azure Functions gotcha.
+
 ## Local testing
 
 ```
 python3 -m http.server 8935   # from the repo root
 ```
-Open `http://localhost:8935/index.html`. The form works fully client-side up
-through Review; Submit will fail until the real `SUBMIT_URL` Function is
-deployed (no debug-bypass needed here since there's no auth to bypass).
+Open `http://localhost:8935/index.html` for the registration form,
+`/checkin.html` for the public self-check-in flow, or `/admin.html` for the
+dashboard (needs a real @ilsroyals.com sign-in — orojas or morelle only).
+Submit/search/check-in all hit the real deployed Function — there's no local
+API emulation, so test data lands in the real SharePoint list; clean up any
+test rows afterward via the Graph API or the SharePoint UI directly.

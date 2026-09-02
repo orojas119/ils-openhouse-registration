@@ -1,18 +1,6 @@
 const { app } = require("@azure/functions");
-const { ALLOWED_ORIGINS } = require("../lib/config");
+const { corsHeaders } = require("../lib/cors");
 const { createRegistrationItem } = require("../lib/graph");
-
-function corsHeaders(request) {
-  const origin = request.headers.get("origin");
-  const headers = {
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-  };
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
-    headers["Access-Control-Allow-Origin"] = origin;
-  }
-  return headers;
-}
 
 const REQUIRED_STUDENT_FIELDS = [
   "studentFirstName",
