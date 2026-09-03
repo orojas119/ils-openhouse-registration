@@ -67,7 +67,7 @@ uses.
 
 ## Form fields (final spec, confirmed in chat)
 
-**Student Information**
+**Student Information** (repeatable — see "Multi-student registration" below)
 - First / Middle (optional) / Last Name
 - Have you ever attended an ILS Open House? (Yes/No) → if Yes, "If so, when?" (year)
 - Student's Current Grade Level (5th–11th grade)
@@ -76,8 +76,11 @@ uses.
   curated Miami-Dade middle/high schools) with free-text fallback for anything
   not listed. If the typed/selected school matches an Archdiocese of Miami
   (ADOM) entry, a required "Current PowerSchool Number" field appears (ADOM
-  schools share one PowerSchool instance).
-- How many people attending (incl. student)? — plain number input, no cap
+  schools share one PowerSchool instance). ADOM detection and the PS# field
+  are independent per student card.
+
+**Party (shared once per submission, not per student)**
+- How many people attending (incl. student(s))? — plain number input, no cap
   (per orojas: the original handwritten "1–5" note doesn't need to be a hard
   limit)
 - How did you hear about the school? (checkboxes, multi-select) — Website,
@@ -92,6 +95,33 @@ uses.
 
 Public intake form → layered bot defenses added 2026-09-03 (see below):
 honeypot, per-IP rate limiting, a fill-time check, and Cloudflare Turnstile.
+
+## Multi-student registration (siblings) (added 2026-09-03)
+
+Step 1 ("Student Information") supports adding more than one student — for
+families registering siblings at once — via a "+ Add Another Student"
+button, modeled directly on the Driver MVR form's repeating-card pattern
+(`index.html`'s `studentCardHTML()`/`addStudent()`/`removeStudent()`/
+`renumberStudents()`, capped at 5 cards). Each card is independent: its own
+name/grade/DOB/gender/school/ADOM-PS# fields, own remove button (hidden
+when only one card exists).
+
+**Data model decision:** attendee count and "how did you hear about us" were
+deliberately kept *shared* across all students in one submission rather than
+per-card — an earlier per-student design would have double-counted party
+size in the admin dashboard's guest-total stats once siblings were involved
+(e.g. two students each saying "4 attending" reads as 8, not 4). Flagged to
+orojas before building; he confirmed moving both fields to a shared "Party"
+section after the student cards.
+
+**Backend:** `POST /api/submit` now takes `{ students: [...], attendeeCount,
+heardAbout, ...sharedParentFields }` — each entry in `students` becomes its
+own SharePoint row (same one-row-per-entity pattern as Driver MVR's
+one-row-per-driver), all sharing the same `AttendeeCount`/`HeardAbout`/parent
+fields. Response includes `studentsCreated` (row count written). Verified
+end-to-end against the live Function + SharePoint list, including that a
+per-card ADOM school (and its PS# field) doesn't leak into a sibling card
+that isn't ADOM.
 
 ## School list — `schools-data.js`
 
