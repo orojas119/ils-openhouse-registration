@@ -174,6 +174,43 @@ venv — decoded back to the exact `checkin.html` URL. `admin.html`'s
 "Show QR Code" button now just opens this page in a new tab instead of
 duplicating QR-rendering logic in a modal (the old modal/logic was removed).
 
+## Mobile optimization (added 2026-09-03)
+
+`index.html` and `checkin.html` — the two pages families actually use on
+their phones — got a real mobile pass. **Testing note for next time:** the
+Claude-in-Chrome `resize_window` tool doesn't actually constrain the page's
+viewport in this environment (the window appeared tiled/maximized and
+`window.innerWidth` stayed at the full screen width regardless). Worked
+around it with a same-origin iframe harness (`<iframe width="320">` etc. —
+iframes get their own real viewport from their width/height attributes
+regardless of the outer window) to test real 320px/375px rendering. Found
+and fixed genuine bugs, not just guesses:
+
+- **Header wrap**: "Immaculata-La Salle High School" was right at the wrap
+  boundary on narrow phones. Added `white-space:nowrap` + ellipsis as a
+  safety net, plus a `≤420px` rule shrinking the crest/font/padding so it
+  fits on one line instead of breaking mid-name.
+- **Step-nav buttons**: fixed horizontal padding + long labels (e.g. "Next:
+  Parent/Guardian Info →") wrapped to 2-3 lines on narrow screens. Now
+  stack full-width below 480px.
+- **Cloudflare Turnstile overflow**: the default widget is a fixed ~300px
+  box — wider than the card's content area on a 320px phone, clipping the
+  Cloudflare branding/links past the card edge. Fixed two ways: switched to
+  Turnstile's `data-size="flexible"` (confirmed real and responsive by
+  testing against the live widget script rather than assuming the
+  attribute exists) and tightened `.container`/`.card` padding below
+  `420px` to give it more room to work with.
+- **checkin.html overflow**: the search input+button row and a result-card
+  (long name + "Checked In" badge) both overflowed the card at 320px.
+  Fixed with `min-width:0` on the shrinking flex children (the classic fix
+  for a flex item refusing to shrink below its content's natural width),
+  `flex-shrink:0` on the badge, and a `≤360px` rule that stacks the search
+  row vertically.
+
+All fixes verified visually at 320px/375px, including a full real
+submission at 320px width with Turnstile completing successfully — not just
+"looks right," actually exercised.
+
 ## Admin dashboard + self-service check-in (added 2026-09-02)
 
 Modeled after morelle's existing "2025-26 Open House Check In.xlsx" front-desk
