@@ -171,6 +171,7 @@
       <input type="text" id="filter-input" placeholder="Search by name or school…" oninput="renderTable()">
       <button class="btn btn-ghost" onclick="loadRegistrations()">↻ Refresh</button>
       <button class="btn btn-ghost" onclick="openQrModal()">Open QR Code Page ↗</button>
+      <button class="btn btn-ghost" onclick="exportCsv()">⬇ Export CSV</button>
       <button class="btn btn-primary" onclick="openWalkInModal()">+ Walk-In Registration</button>
     </div>
 
@@ -391,13 +392,17 @@ function renderStats() {
     <div class="stat-card"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join("");
 }
 
-function renderTable() {
+function getFilteredRegistrations() {
   const q = document.getElementById('filter-input').value.trim().toLowerCase();
-  const filtered = allRegistrations.filter(r => {
+  return allRegistrations.filter(r => {
     if (!q) return true;
     const hay = `${r.StudentFirstName} ${r.StudentLastName} ${r.SchoolAttending}`.toLowerCase();
     return hay.includes(q);
   }).sort((a, b) => (a.StudentLastName || '').localeCompare(b.StudentLastName || ''));
+}
+
+function renderTable() {
+  const filtered = getFilteredRegistrations();
 
   document.getElementById('empty-state').style.display = filtered.length ? 'none' : 'block';
   document.getElementById('table-body').innerHTML = filtered.map(r => `
@@ -414,6 +419,48 @@ function renderTable() {
       </td>
       <td><button class="btn btn-ghost btn-sm" onclick="toggleCheckIn('${r.id}', ${!r.CheckedIn})">${r.CheckedIn ? 'Undo' : 'Check In'}</button></td>
     </tr>`).join("");
+}
+
+// Same columns as the dashboard table (Last Name through Status), with
+// Status split into separate Checked In/Checked In At/Walk-In columns —
+// a badge doesn't mean anything once it's plain spreadsheet text.
+function csvField(value) {
+  const s = String(value ?? "");
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function exportCsv() {
+  const rows = getFilteredRegistrations();
+  const headers = [
+    "Last Name", "First Name", "Grade", "School", "ADOM School",
+    "Guests", "Heard About", "Checked In", "Checked In At", "Walk-In",
+  ];
+  const lines = [headers.map(csvField).join(",")];
+  for (const r of rows) {
+    lines.push([
+      r.StudentLastName || "",
+      r.StudentFirstName || "",
+      r.GradeLevel || "",
+      r.SchoolAttending || "",
+      r.IsADOMSchool ? "Yes" : "No",
+      r.AttendeeCount ?? "",
+      r.HeardAbout || "",
+      r.CheckedIn ? "Yes" : "No",
+      r.CheckedInAt || "",
+      r.IsWalkIn ? "Yes" : "No",
+    ].map(csvField).join(","));
+  }
+
+  const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const today = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `ILS-Open-House-Registrations-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 async function toggleCheckIn(id, newState) {
