@@ -103,6 +103,7 @@
   table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   th { text-align: left; padding: 12px 14px; background: var(--green-pale); color: var(--green); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; position: sticky; top: 0; }
   td { padding: 10px 14px; border-top: 1px solid var(--gray-100); white-space: nowrap; }
+  .td-heard { max-width: 180px; overflow: hidden; text-overflow: ellipsis; cursor: default; }
   tr.checked-in { background: var(--green-pale); }
   .badge { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 10px; }
   .badge-adom { background: var(--gold-light); color: var(--gold-dark); }
@@ -406,7 +407,7 @@ function renderTable() {
       <td>${r.GradeLevel || ''}</td>
       <td>${r.SchoolAttending || ''} ${r.IsADOMSchool ? '<span class="badge badge-adom">ADOM</span>' : ''}</td>
       <td>${r.AttendeeCount ?? ''}</td>
-      <td>${r.HeardAbout || ''}</td>
+      <td class="td-heard" title="${(r.HeardAbout || '').replace(/"/g, '&quot;')}">${r.HeardAbout || ''}</td>
       <td>
         ${r.CheckedIn ? '<span class="badge badge-checked">✓ Checked In</span>' : ''}
         ${r.IsWalkIn ? '<span class="badge badge-walkin">Walk-In</span>' : ''}
