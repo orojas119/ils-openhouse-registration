@@ -10,18 +10,24 @@ const { verifyTurnstile } = require("../lib/turnstile");
 // layered alongside the honeypot, rate limit, and Turnstile below.
 const MIN_FILL_MS = 4000;
 
+// Per-student fields — one registration can now list multiple students
+// (siblings), each becoming its own SharePoint row that shares the fields
+// below (same pattern as [[driver-mvr-form]]'s one-row-per-driver).
 const REQUIRED_STUDENT_FIELDS = [
-  "studentFirstName",
-  "studentLastName",
+  "firstName",
+  "lastName",
   "attendedBefore",
   "gradeLevel",
   "dateOfBirth",
   "gender",
   "schoolAttending",
-  "attendeeCount",
 ];
 
-const REQUIRED_PARENT_FIELDS = [
+// Shared once per submission, not per student — notably attendeeCount,
+// which used to be per-student and double-counted party size across
+// siblings on the admin dashboard's guest-total stats (fixed 2026-09-03).
+const REQUIRED_SHARED_FIELDS = [
+  "attendeeCount",
   "salutation",
   "parentFirstName",
   "parentLastName",
@@ -71,7 +77,24 @@ app.http("submitOpenHouse", {
         return { status: 400, headers, jsonBody: { error: "Bot verification failed. Please reload the page and try again." } };
       }
 
-      for (const f of [...REQUIRED_STUDENT_FIELDS, ...REQUIRED_PARENT_FIELDS]) {
+      if (!Array.isArray(body.students) || body.students.length === 0) {
+        return { status: 400, headers, jsonBody: { error: "At least one student is required." } };
+      }
+      for (const s of body.students) {
+        for (const f of REQUIRED_STUDENT_FIELDS) {
+          if (!s[f] || !String(s[f]).trim()) {
+            return { status: 400, headers, jsonBody: { error: `Missing required student field: ${f}` } };
+          }
+        }
+        if (s.attendedBefore === "Yes" && !String(s.attendedWhenYear || "").trim()) {
+          return { status: 400, headers, jsonBody: { error: "Missing required field: attendedWhenYear" } };
+        }
+        if (s.isADOMSchool && !String(s.powerSchoolNumber || "").trim()) {
+          return { status: 400, headers, jsonBody: { error: "Missing required field: powerSchoolNumber" } };
+        }
+      }
+
+      for (const f of REQUIRED_SHARED_FIELDS) {
         if (!body[f] || !String(body[f]).trim()) {
           return { status: 400, headers, jsonBody: { error: `Missing required field: ${f}` } };
         }
@@ -79,48 +102,43 @@ app.http("submitOpenHouse", {
       if (!Array.isArray(body.heardAbout) || body.heardAbout.length === 0) {
         return { status: 400, headers, jsonBody: { error: "Select at least one way you heard about the school." } };
       }
-      if (body.attendedBefore === "Yes" && !String(body.attendedWhenYear || "").trim()) {
-        return { status: 400, headers, jsonBody: { error: "Missing required field: attendedWhenYear" } };
-      }
-      if (body.isADOMSchool && !String(body.powerSchoolNumber || "").trim()) {
-        return { status: 400, headers, jsonBody: { error: "Missing required field: powerSchoolNumber" } };
-      }
 
       const submittedAt = new Date().toISOString().slice(0, 10);
-      const studentFullName = [body.studentFirstName, body.studentMiddleName, body.studentLastName]
-        .filter(Boolean)
-        .join(" ");
+      let created = 0;
+      for (const s of body.students) {
+        const studentFullName = [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" ");
+        await createRegistrationItem({
+          Title: studentFullName,
+          StudentFirstName: s.firstName,
+          StudentMiddleName: s.middleName || "",
+          StudentLastName: s.lastName,
+          AttendedBefore: s.attendedBefore,
+          AttendedWhenYear: s.attendedWhenYear || "",
+          GradeLevel: s.gradeLevel,
+          DateOfBirth: s.dateOfBirth,
+          Gender: s.gender,
+          SchoolAttending: s.schoolAttending,
+          IsADOMSchool: !!s.isADOMSchool,
+          PowerSchoolNumber: s.powerSchoolNumber || "",
+          AttendeeCount: Number(body.attendeeCount),
+          HeardAbout: body.heardAbout.join("; "),
+          ParentSalutation: body.salutation,
+          ParentFirstName: body.parentFirstName,
+          ParentLastName: body.parentLastName,
+          ParentAddress: body.address,
+          ParentCity: body.city,
+          ParentState: body.state,
+          ParentZip: body.zip,
+          ParentHomePhone: body.homePhone,
+          ParentCellPhone: body.cellPhone,
+          ParentOfficePhone: body.officePhone || "",
+          ParentEmail: body.email,
+          SubmittedAt: submittedAt,
+        });
+        created += 1;
+      }
 
-      await createRegistrationItem({
-        Title: studentFullName,
-        StudentFirstName: body.studentFirstName,
-        StudentMiddleName: body.studentMiddleName || "",
-        StudentLastName: body.studentLastName,
-        AttendedBefore: body.attendedBefore,
-        AttendedWhenYear: body.attendedWhenYear || "",
-        GradeLevel: body.gradeLevel,
-        DateOfBirth: body.dateOfBirth,
-        Gender: body.gender,
-        SchoolAttending: body.schoolAttending,
-        IsADOMSchool: !!body.isADOMSchool,
-        PowerSchoolNumber: body.powerSchoolNumber || "",
-        AttendeeCount: Number(body.attendeeCount),
-        HeardAbout: body.heardAbout.join("; "),
-        ParentSalutation: body.salutation,
-        ParentFirstName: body.parentFirstName,
-        ParentLastName: body.parentLastName,
-        ParentAddress: body.address,
-        ParentCity: body.city,
-        ParentState: body.state,
-        ParentZip: body.zip,
-        ParentHomePhone: body.homePhone,
-        ParentCellPhone: body.cellPhone,
-        ParentOfficePhone: body.officePhone,
-        ParentEmail: body.email,
-        SubmittedAt: submittedAt,
-      });
-
-      return { status: 200, headers, jsonBody: { success: true } };
+      return { status: 200, headers, jsonBody: { success: true, studentsCreated: created } };
     } catch (e) {
       context.error(e);
       return { status: 500, headers, jsonBody: { error: e.message || "Unexpected server error." } };
