@@ -24,7 +24,6 @@ const CREST_CONTENT_ID = "ils-crest";
 const GREEN = "#004B23";
 const GREEN_PALE = "#f2f7f4";
 const GOLD = "#FFC20E";
-const GOLD_DARK = "#8a6d00";
 
 function escapeIcs(s) {
   return String(s).replace(/([,;])/g, "\\$1").replace(/\n/g, "\\n");
@@ -94,7 +93,7 @@ async function sendConfirmationEmail({ submissionId, students, parentFirstName, 
               <a href="${googleCalendarLink(description)}" style="display:inline-block;background:${GREEN};color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold;">Add to Google Calendar</a>
             </td>
             <td>
-              <a href="${APPLE_CALENDAR_URL}" style="display:inline-block;background:${GOLD};color:${GOLD_DARK};padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold;">Add to Apple Calendar</a>
+              <a href="${APPLE_CALENDAR_URL}" style="display:inline-block;background:#fff;color:${GREEN};padding:8px 17px;border:2px solid ${GREEN};border-radius:6px;text-decoration:none;font-weight:bold;">Add to Apple Calendar</a>
             </td>
           </tr>
         </table>
