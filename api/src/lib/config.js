@@ -34,5 +34,5 @@ module.exports = {
   // succeeds) while this is blank, so shipping doesn't block on the mailbox
   // existing yet.
   CONFIRMATION_FROM_EMAIL: process.env.CONFIRMATION_FROM_EMAIL || "",
-  EVENT_LOCATION: process.env.EVENT_LOCATION || "Immaculata-La Salle High School",
+  EVENT_LOCATION: process.env.EVENT_LOCATION || "Immaculata-La Salle High School, 3601 S Miami Ave, Miami, FL 33133",
 };

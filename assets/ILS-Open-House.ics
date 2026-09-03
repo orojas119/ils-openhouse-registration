@@ -1,0 +1,15 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Immaculata-La Salle High School//Open House//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:ils-open-house-2026@openhouse.ilsroyals.com
+DTSTAMP:20260903T185011Z
+DTSTART:20261017T120000Z
+DTEND:20261017T170000Z
+SUMMARY:ILS Open House
+LOCATION:Immaculata-La Salle High School\, 3601 S Miami Ave\, Miami\, FL 33133
+DESCRIPTION:Thank you for registering for the ILS Open House. We look forward to seeing you and your family!
+END:VEVENT
+END:VCALENDAR
