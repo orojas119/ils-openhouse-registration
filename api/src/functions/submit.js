@@ -1,8 +1,10 @@
+const crypto = require("crypto");
 const { app } = require("@azure/functions");
 const { corsHeaders } = require("../lib/cors");
 const { createRegistrationItem } = require("../lib/graph");
 const { allow } = require("../lib/ratelimit");
 const { verifyTurnstile } = require("../lib/turnstile");
+const { sendConfirmationEmail } = require("../lib/email");
 
 // A real 3-step form takes real humans well over this long to fill out —
 // anything submitted faster almost certainly skipped the UI entirely
@@ -104,6 +106,11 @@ app.http("submitOpenHouse", {
       }
 
       const submittedAt = new Date().toISOString().slice(0, 10);
+      // Ties sibling rows from this submission together — lets the admin
+      // dashboard dedupe the shared AttendeeCount instead of summing it once
+      // per sibling, and lets check-in propagate a party-size edit to every
+      // sibling row (see SubmissionId column, added 2026-09-03).
+      const submissionId = crypto.randomUUID();
       let created = 0;
       for (const s of body.students) {
         const studentFullName = [s.firstName, s.middleName, s.lastName].filter(Boolean).join(" ");
@@ -134,8 +141,23 @@ app.http("submitOpenHouse", {
           ParentOfficePhone: body.officePhone || "",
           ParentEmail: body.email,
           SubmittedAt: submittedAt,
+          SubmissionId: submissionId,
         });
         created += 1;
+      }
+
+      try {
+        await sendConfirmationEmail({
+          submissionId,
+          students: body.students,
+          parentFirstName: body.parentFirstName,
+          parentLastName: body.parentLastName,
+          email: body.email,
+        });
+      } catch (e) {
+        // A family's registration is already saved above — a failed email
+        // shouldn't turn that into an error for them.
+        context.error("Confirmation email failed: " + e.message);
       }
 
       return { status: 200, headers, jsonBody: { success: true, studentsCreated: created } };

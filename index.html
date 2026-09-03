@@ -149,6 +149,7 @@
   .success-icon { width: 72px; height: 72px; border-radius: 50%; background: var(--green-light); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 34px; margin: 0 auto 20px; }
   .success-title { font-family: 'Poppins', sans-serif; font-size: 24px; font-weight: 700; color: var(--green); margin-bottom: 12px; }
   .success-sub { font-size: 14.5px; color: var(--gray-600); max-width: 440px; margin: 0 auto 28px; line-height: 1.6; }
+  .success-note { font-size: 12.5px; color: var(--gray-400); max-width: 440px; margin: -12px auto 24px; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -285,17 +286,17 @@
       <div class="field-row thirds">
         <div class="field" id="f-homePhone">
           <label>Home Phone<span class="req">*</span></label>
-          <input type="tel" id="homePhone" autocomplete="tel">
-          <div class="err-msg">Home phone is required.</div>
+          <input type="tel" id="homePhone" autocomplete="tel" placeholder="(305)555-1234" maxlength="13">
+          <div class="err-msg">A valid 10-digit phone number is required.</div>
         </div>
         <div class="field" id="f-cellPhone">
           <label>Cell<span class="req">*</span></label>
-          <input type="tel" id="cellPhone" autocomplete="tel">
-          <div class="err-msg">Cell phone is required.</div>
+          <input type="tel" id="cellPhone" autocomplete="tel" placeholder="(305)555-1234" maxlength="13">
+          <div class="err-msg">A valid 10-digit phone number is required.</div>
         </div>
         <div class="field" id="f-officePhone">
           <label>Office Phone <span class="hint">(optional)</span></label>
-          <input type="tel" id="officePhone">
+          <input type="tel" id="officePhone" placeholder="(305)555-1234" maxlength="13">
         </div>
       </div>
 
@@ -332,7 +333,8 @@
   <div id="success-screen">
     <div class="success-icon">✓</div>
     <div class="success-title">Registration Received</div>
-    <div class="success-sub" id="success-sub">Thank you for registering for the ILS Open House. We look forward to meeting you and your family!</div>
+    <div class="success-sub" id="success-sub">Thank you for registering for the ILS Open House. We look forward to seeing you and your family at our Open House on Saturday, October 17th.</div>
+    <div class="success-note">A confirmation email with the event details and a calendar invite is on its way to your inbox.</div>
     <button class="btn btn-primary" onclick="location.reload()">Register Another Student</button>
   </div>
 
@@ -506,7 +508,21 @@ function init() {
   const schoolsList = document.getElementById('schools-list');
   (typeof SCHOOLS !== 'undefined' ? SCHOOLS : []).forEach(s => schoolsList.appendChild(new Option(s.name)));
 
+  ['homePhone', 'cellPhone', 'officePhone'].forEach(id => {
+    document.getElementById(id).addEventListener('input', (e) => formatPhoneInput(e.target));
+  });
+
   addStudent();
+}
+
+// (###)###-#### as the user types, capped at 10 digits.
+function formatPhoneInput(el) {
+  const digits = el.value.replace(/\D/g, '').slice(0, 10);
+  let formatted = digits;
+  if (digits.length > 6) formatted = `(${digits.slice(0,3)})${digits.slice(3,6)}-${digits.slice(6)}`;
+  else if (digits.length > 3) formatted = `(${digits.slice(0,3)})${digits.slice(3)}`;
+  else if (digits.length > 0) formatted = `(${digits}`;
+  el.value = formatted;
 }
 
 // ─── VALIDATION ───────────────────────────────────────────────────
@@ -547,7 +563,16 @@ function validate(step) {
   }
 
   if (step === 2) {
-    ['salutation','parentFirstName','parentLastName','address','city','state','zip','homePhone','cellPhone','email'].forEach(req);
+    ['salutation','parentFirstName','parentLastName','address','city','state','zip','email'].forEach(req);
+    const reqPhone = (id) => {
+      const el = document.getElementById(id);
+      const digits = ((el && el.value) || '').replace(/\D/g, '');
+      const ok = digits.length === 10;
+      setFieldError(id, !ok);
+      if (!ok) valid = false;
+      return ok;
+    };
+    ['homePhone', 'cellPhone'].forEach(reqPhone);
   }
 
   return valid;

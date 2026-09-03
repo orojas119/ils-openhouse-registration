@@ -353,11 +353,28 @@ async function loadRegistrations() {
   }
 }
 
+// Sibling rows from one multi-student submission share a SubmissionId and
+// an identical AttendeeCount — count that shared party size once per
+// SubmissionId, not once per sibling row, or a 2-sibling "4 attending"
+// submission reads as 8. Rows without a SubmissionId (walk-ins, or rows
+// from before this column existed) each count individually.
+function dedupedGuestTotal(regs) {
+  const seen = new Set();
+  let total = 0;
+  for (const r of regs) {
+    const key = r.SubmissionId || `row:${r.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    total += Number(r.AttendeeCount) || 0;
+  }
+  return total;
+}
+
 function renderStats() {
   const total = allRegistrations.length;
   const checkedIn = allRegistrations.filter(r => r.CheckedIn).length;
-  const totalGuests = allRegistrations.reduce((s, r) => s + (Number(r.AttendeeCount) || 0), 0);
-  const guestsCheckedIn = allRegistrations.filter(r => r.CheckedIn).reduce((s, r) => s + (Number(r.AttendeeCount) || 0), 0);
+  const totalGuests = dedupedGuestTotal(allRegistrations);
+  const guestsCheckedIn = dedupedGuestTotal(allRegistrations.filter(r => r.CheckedIn));
   const notYetArrived = total - checkedIn;
   const avgGuests = total ? (totalGuests / total).toFixed(1) : "0.0";
 

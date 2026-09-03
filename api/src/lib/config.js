@@ -27,4 +27,12 @@ module.exports = {
   // widget — submit.js skips verification entirely when it's blank, so the
   // form keeps working during rollout instead of hard-failing.
   TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY || "",
+
+  // Confirmation email (added 2026-09-03) — sent via Graph sendMail as this
+  // mailbox once orojas provisions it. Same graceful-degradation pattern as
+  // TURNSTILE_SECRET_KEY above: lib/email.js no-ops (submission still
+  // succeeds) while this is blank, so shipping doesn't block on the mailbox
+  // existing yet.
+  CONFIRMATION_FROM_EMAIL: process.env.CONFIRMATION_FROM_EMAIL || "",
+  EVENT_LOCATION: process.env.EVENT_LOCATION || "Immaculata-La Salle High School",
 };

@@ -121,6 +121,17 @@ async function deleteAdminItem(id) {
   await graphFetch(`${adminsListBase()}/items/${id}`, { method: "DELETE" });
 }
 
+// Sends as `fromAddress` via the shared app's Mail.Send application
+// permission (already admin-consented — no new Graph permission needed).
+// `fromAddress` must be a real mailbox in the tenant.
+async function sendMail(fromAddress, message) {
+  await graphFetch(`/users/${encodeURIComponent(fromAddress)}/sendMail`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, saveToSentItems: true }),
+  });
+}
+
 module.exports = {
   createRegistrationItem,
   listRegistrationItems,
@@ -129,4 +140,5 @@ module.exports = {
   listAdminItems,
   createAdminItem,
   deleteAdminItem,
+  sendMail,
 };

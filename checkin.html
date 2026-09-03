@@ -87,9 +87,11 @@
   #confirm-screen, #success-screen { display: none; }
   .confirm-detail { background: var(--green-pale); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 20px; }
   .confirm-name { font-family: 'Poppins', sans-serif; font-size: 19px; font-weight: 700; color: var(--green); margin-bottom: 8px; }
-  .confirm-row { display: flex; justify-content: space-between; font-size: 13.5px; padding: 4px 0; }
+  .confirm-row { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; padding: 4px 0; }
   .confirm-row .cl { color: var(--gray-600); }
   .confirm-row .cv { color: var(--gray-800); font-weight: 600; }
+  #party-size-input { width: 64px; padding: 6px 8px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 600; color: var(--gray-800); text-align: center; outline: none; transition: var(--transition); }
+  #party-size-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,75,35,.1); }
 
   .success-icon { width: 72px; height: 72px; border-radius: 50%; background: var(--green-light); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 34px; margin: 0 auto 20px; }
   .success-title { font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 700; color: var(--green); margin-bottom: 10px; text-align: center; }
@@ -200,7 +202,7 @@ function selectResult(i) {
     <div class="confirm-name">${selected.studentFirstName} ${selected.studentLastName}</div>
     <div class="confirm-row"><span class="cl">Grade</span><span class="cv">${selected.gradeLevel || '—'}</span></div>
     <div class="confirm-row"><span class="cl">School</span><span class="cv">${selected.schoolAttending || '—'}</span></div>
-    <div class="confirm-row"><span class="cl">Party Size</span><span class="cv">${selected.attendeeCount || '—'}</span></div>`;
+    <div class="confirm-row"><span class="cl">Party Size</span><input type="number" id="party-size-input" min="1" step="1" value="${selected.attendeeCount || 1}"></div>`;
   document.getElementById("confirm-btn").textContent = selected.checkedIn ? "Already Checked In — Tap to Confirm" : "Complete Check-In";
   showScreen("confirm-screen");
 }
@@ -208,11 +210,13 @@ function selectResult(i) {
 async function completeCheckIn() {
   const btn = document.getElementById("confirm-btn");
   btn.disabled = true;
+  const partySizeInput = document.getElementById("party-size-input");
+  const attendeeCount = Number(partySizeInput.value);
   try {
     const res = await fetch(`${API_BASE}/checkin/complete`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: selected.id }),
+      body: JSON.stringify({ id: selected.id, attendeeCount }),
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
