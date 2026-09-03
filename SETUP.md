@@ -123,6 +123,55 @@ end-to-end against the live Function + SharePoint list, including that a
 per-card ADOM school (and its PS# field) doesn't leak into a sibling card
 that isn't ADOM.
 
+## Confirmation email, phone formatting, check-in party-size edit (added 2026-09-03)
+
+- **Phone formatting:** Home/Cell/Office phone inputs in `index.html` now
+  live-format as `(###)###-####` while typing (`formatPhoneInput()`).
+  Home/Cell are validated as complete 10-digit numbers before Step 2 can
+  advance; Office stays optional.
+- **Success message:** now names the event — "...Open House on Saturday,
+  October 17th." — plus a note that a confirmation email is on its way.
+- **Confirmation email:** `submit.js` calls `lib/email.js`'s
+  `sendConfirmationEmail()` after all SharePoint rows are written (wrapped
+  in try/catch — a failed send never fails the registration itself). Sends
+  via Graph `POST /users/{mailbox}/sendMail` using the shared iHelp Graph
+  app's `Mail.Send` **application** permission — already admin-consented,
+  confirmed via `az rest` against `servicePrincipals/{id}/appRoleAssignments`
+  before building, so no new Graph consent was needed. Email includes the
+  registered student(s), event date/time/location, an inline "Add to Google
+  Calendar" link, and an `.ics` attachment (built by hand in `lib/email.js`
+  — `DTSTART`/`DTEND` are plain UTC since Oct 17 2026 falls during EDT,
+  avoiding the need for a `VTIMEZONE` block).
+  **⚠ Pending config, not yet enabled:** `CONFIRMATION_FROM_EMAIL` (Function
+  App setting) is unset, so `lib/email.js` no-ops for now (same
+  graceful-degradation pattern as `TURNSTILE_SECRET_KEY`). orojas asked for
+  `admissions@ilsroyals.com`, but that mailbox **does not exist** in the
+  tenant (checked as both a user and a mail-enabled group via Graph,
+  2026-09-03) — needs a real mailbox before this can go live. `EVENT_LOCATION`
+  (Function App setting, defaults to just "Immaculata-La Salle High School")
+  is also still awaiting the exact street address from orojas.
+- **Check-in party-size edit:** `checkin.html`'s confirm screen now shows
+  Party Size as an editable number input (pre-filled with the registered
+  count) instead of plain text; `checkinComplete.js` accepts an optional
+  `attendeeCount` in the POST body.
+- **Bug fixed along the way:** sibling rows from one multi-student
+  submission all shared the same `AttendeeCount`, but the admin dashboard
+  summed it once per row — a 2-sibling "4 attending" submission read as 8 in
+  "Total Guests Registered." Fixed by adding a `SubmissionId` column
+  (`scripts/add-submissionid-column.mjs`, same device-code column-add
+  pattern as the others — orojas ran the device-code sign-in) written to
+  every sibling row at submit time. `admin.html`'s `dedupedGuestTotal()` now
+  counts each `SubmissionId` once; rows without one (walk-ins, or rows from
+  before this column existed) still count individually. A party-size
+  correction at check-in propagates to every sibling sharing the same
+  `SubmissionId` so they can't drift apart. Verified end-to-end via curl
+  against the live Function + SharePoint (temporarily unsetting
+  `TURNSTILE_SECRET_KEY`, same pattern as prior sessions): submitted a
+  2-sibling registration, confirmed both rows shared one `SubmissionId`,
+  checked in one sibling with a corrected party size, confirmed the other
+  sibling's `AttendeeCount` updated too while its own `CheckedIn` stayed
+  `false`, then cleaned up the test rows and restored the Turnstile secret.
+
 ## School list — `schools-data.js`
 
 Compiled via research pass 2026-08-31: Archdiocese of Miami's official school
