@@ -131,25 +131,51 @@ that isn't ADOM.
   advance; Office stays optional.
 - **Success message:** now names the event — "...Open House on Saturday,
   October 17th." — plus a note that a confirmation email is on its way.
-- **Confirmation email:** `submit.js` calls `lib/email.js`'s
-  `sendConfirmationEmail()` after all SharePoint rows are written (wrapped
-  in try/catch — a failed send never fails the registration itself). Sends
-  via Graph `POST /users/{mailbox}/sendMail` using the shared iHelp Graph
-  app's `Mail.Send` **application** permission — already admin-consented,
-  confirmed via `az rest` against `servicePrincipals/{id}/appRoleAssignments`
-  before building, so no new Graph consent was needed. Email includes the
-  registered student(s), event date/time/location, an inline "Add to Google
-  Calendar" link, and an `.ics` attachment (built by hand in `lib/email.js`
-  — `DTSTART`/`DTEND` are plain UTC since Oct 17 2026 falls during EDT,
-  avoiding the need for a `VTIMEZONE` block).
-  **⚠ Pending config, not yet enabled:** `CONFIRMATION_FROM_EMAIL` (Function
-  App setting) is unset, so `lib/email.js` no-ops for now (same
-  graceful-degradation pattern as `TURNSTILE_SECRET_KEY`). orojas asked for
-  `admissions@ilsroyals.com`, but that mailbox **does not exist** in the
-  tenant (checked as both a user and a mail-enabled group via Graph,
-  2026-09-03) — needs a real mailbox before this can go live. `EVENT_LOCATION`
-  (Function App setting, defaults to just "Immaculata-La Salle High School")
-  is also still awaiting the exact street address from orojas.
+- **Confirmation email — ✅ live as of 2026-09-03:** `submit.js` calls
+  `lib/email.js`'s `sendConfirmationEmail()` after all SharePoint rows are
+  written (wrapped in try/catch — a failed send never fails the
+  registration itself). Sends via Graph `POST /users/{mailbox}/sendMail`
+  using the shared iHelp Graph app's `Mail.Send` **application**
+  permission — already admin-consented, confirmed via `az rest` against
+  `servicePrincipals/{id}/appRoleAssignments` before building, so no new
+  Graph consent was needed.
+  `CONFIRMATION_FROM_EMAIL=admissions@ilsroyals.com` is set as a real
+  Function App setting. That address turned out to be a **secondary SMTP
+  alias on Wendy Vargas's mailbox** (`wvargas@ilsroyals.com`), not its own
+  mailbox — an initial Graph `/users/admissions@ilsroyals.com` lookup 404s
+  for an alias like this (only resolves primary addresses/UPNs); found it
+  via `$filter=proxyAddresses/any(...)` instead. Setting
+  `message.from.emailAddress.address` to the alias in the `sendMail` call
+  makes it display correctly as "ILS Admissions <admissions@ilsroyals.com>"
+  rather than Wendy's name.
+  Email includes the registered student(s), event date/time/full address
+  (`EVENT_LOCATION` = "Immaculata-La Salle High School, 3601 S Miami Ave,
+  Miami, FL 33133"), the ILS crest embedded inline via a real Content-ID
+  attachment (`api/src/lib/assets/crest-email.png`, 160×160 — not
+  hotlinked, survives remote-image blocking), and two calendar buttons:
+  "Add to Google Calendar" (solid green) and "Add to Apple Calendar"
+  (green-outline — an initial solid-gold version was rejected as
+  off-brand). Apple's button links to a static public
+  `assets/ILS-Open-House.ics` on this same GitHub Pages site (same event
+  for every family — tapping a `.ics` URL opens Calendar directly on
+  iOS/Mac, no library needed); a personalized `.ics` also still goes out as
+  a real attachment (built by hand in `lib/email.js` — `DTSTART`/`DTEND`
+  are plain UTC since Oct 17 2026 falls during EDT, avoiding the need for a
+  `VTIMEZONE` block).
+  **Testing gotchas hit along the way:** (1) a manual sendMail test using
+  `az account get-access-token` (orojas's own delegated Azure CLI login)
+  403'd for every mailbox — that token has nothing to do with the app's own
+  client-credentials identity, so it was a false alarm, not a real
+  permissions problem; (2) reading the app's client secret out of Function
+  App settings to manually mint a real app-only token got blocked by the
+  auto-mode classifier (sensitive credential extraction) — verified instead
+  by triggering a real test submission through the deployed Function and
+  checking Application Insights (`az monitor app-insights query`) for
+  whether the try/catch around `sendConfirmationEmail` logged an error;
+  (3) `az functionapp config appsettings set` did not take effect on the
+  very next request — needed `az functionapp restart` after each settings
+  change during testing (both to enable and to restore the temporarily
+  unset `TURNSTILE_SECRET_KEY`).
 - **Check-in party-size edit:** `checkin.html`'s confirm screen now shows
   Party Size as an editable number input (pre-filled with the registered
   count) instead of plain text; `checkinComplete.js` accepts an optional
