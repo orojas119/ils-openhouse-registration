@@ -10,6 +10,52 @@ POSTing to a small Azure Function that writes into a SharePoint list on
 site as [[driver-mvr-form]] — zero new admin consent needed (Sites.Selected
 grants are site-wide).
 
+## Self-service admin management (added 2026-09-03)
+
+`admin.html` has a gear icon (header, next to Sign Out) opening an **Admin
+Settings** modal where any current admin can add or remove other
+`@ilsroyals.com` admins — no code change or redeploy needed to onboard a
+new admin.
+
+**Architecture change this required:** the sign-in app
+(`ILS-OpenHouse-Admin-WebAuth`)'s Enterprise Application was previously
+restricted via `appRoleAssignmentRequired: true` with only orojas/morelle
+explicitly assigned — Microsoft itself blocked anyone else's sign-in
+attempt. That's now **relaxed to `false`** (confirmed with orojas): any
+`@ilsroyals.com` account can reach the login flow, but `api/src/lib/auth.js`
+still checks the caller's email against the admin list before granting
+access — same net security, just enforced by our backend instead of
+Entra. This trade avoided needing a new high-privilege Graph permission
+(`AppRoleAssignment.ReadWrite.All`, application-scoped, requires Global
+Admin consent) just to let admins manage each other via the Graph API —
+see the "recommended vs. Entra-lock" tradeoff discussed with orojas before
+building this.
+
+**Data store:** the old static `ADMIN_EMAILS` Function App setting is gone.
+Admins now live in a new SharePoint list, **"Open House Admins"**
+(`SP_ADMINS_LIST_ID`, provisioned via `scripts/add-admins-list.mjs`, seeded
+with orojas + morelle), checked dynamically by `api/src/lib/admins.js`
+with a 30s in-memory cache (so a just-added/removed admin takes effect
+within half a minute, without hitting Graph on every request).
+
+- `orojas@ilsroyals.com` is a **hardcoded permanent super admin**
+  (`SUPER_ADMIN_EMAIL` in `config.js`) — always allowed even if the
+  SharePoint list is ever empty/unreachable, and can't be removed via the
+  UI or a direct API call (`DELETE /api/staff/admins/{id}` 400s if the
+  target is the super admin — verified both the UI hides the button *and*
+  the backend rejects a forged direct call).
+- New endpoints on `func-openhouse`: `GET/POST /api/staff/admins`,
+  `DELETE /api/staff/admins/{id}` — all admin-only, same JWT+allowlist
+  gate as the other `/api/staff/*` routes. (Route is `staff/admins`, not
+  `admin/admins` — same platform-level 404 gotcha as before, see
+  [[swa-reserved-admin-route]].)
+- Add-admin validates the email is `@ilsroyals.com` and not already an
+  admin; remove uses a **two-step in-page confirm** (click "Remove" →
+  button becomes red "Confirm Remove" + a "Cancel", no native
+  `window.confirm()` — that call actually froze the Claude-in-Chrome
+  browser-automation session mid-test the first time it was tried, so it
+  was replaced before shipping).
+
 ## Branding
 
 Uses ILS's own identity (not the Archdiocese of Miami look Driver MVR uses,

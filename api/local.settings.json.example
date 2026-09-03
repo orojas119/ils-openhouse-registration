@@ -8,9 +8,9 @@
     "AZURE_AD_CLIENT_SECRET": "<iHelp Graph app client secret>",
     "SP_SITE_ID": "ilsroyals.sharepoint.com,95f38ad3-ff96-41b9-a5dd-d0edc37faa03,94e53d43-5107-4380-8ae8-800fd0f1de0b",
     "SP_OPENHOUSE_LIST_ID": "a56759e2-08e0-44f2-a7ce-5bda2c94f119",
+    "SP_ADMINS_LIST_ID": "923664e8-2499-4077-9b6b-11dbadfb638b",
     "ALLOWED_ORIGINS": "http://localhost:8935,https://orojas119.github.io,https://openhouse.ilsroyals.com",
     "WEBAUTH_CLIENT_ID": "c8cb8dd4-153c-428b-aca0-c2c3e8a74f5b",
-    "ADMIN_EMAILS": "orojas@ilsroyals.com,morelle@ilsroyals.com",
     "TURNSTILE_SECRET_KEY": "<Cloudflare Turnstile secret key>"
   },
   "Host": {

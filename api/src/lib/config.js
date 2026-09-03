@@ -4,6 +4,7 @@ module.exports = {
   GRAPH_CLIENT_SECRET: process.env.AZURE_AD_CLIENT_SECRET,
   SP_SITE_ID: process.env.SP_SITE_ID,
   SP_OPENHOUSE_LIST_ID: process.env.SP_OPENHOUSE_LIST_ID,
+  SP_ADMINS_LIST_ID: process.env.SP_ADMINS_LIST_ID,
   // Comma-separated list of origins allowed to call this API (the static form's domains).
   ALLOWED_ORIGINS: (process.env.ALLOWED_ORIGINS || "")
     .split(",")
@@ -14,14 +15,12 @@ module.exports = {
   // data app above, per playbook §9 — narrowly scoped, its own app reg).
   WEBAUTH_CLIENT_ID: process.env.WEBAUTH_CLIENT_ID,
   WEBAUTH_TENANT_ID: process.env.AZURE_AD_TENANT_ID,
-  // Hardcoded allowlist, not SharePoint-site membership — lets IT assign
-  // "admin" here independent of who's on the SharePoint site (see
-  // ils-swa-playbook §9's in-app admin gate convention). Confirmed with
-  // orojas 2026-09-02: just him + morelle@ilsroyals.com for now.
-  ADMIN_EMAILS: (process.env.ADMIN_EMAILS || "orojas@ilsroyals.com,morelle@ilsroyals.com")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean),
+  // Permanent super-admin — never removable via the settings UI, and always
+  // allowed even if the SharePoint admins list is ever empty/corrupted/
+  // unreachable. Everyone else's admin access lives in the "Open House
+  // Admins" SharePoint list (SP_ADMINS_LIST_ID), editable from the
+  // settings gear in admin.html — see api/src/lib/admins.js.
+  SUPER_ADMIN_EMAIL: "orojas@ilsroyals.com",
 
   // Cloudflare Turnstile (bot protection on the public registration form).
   // TURNSTILE_SECRET_KEY is intentionally unset until orojas provisions the

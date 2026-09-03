@@ -1,4 +1,4 @@
-const { TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, SP_SITE_ID, SP_OPENHOUSE_LIST_ID } = require("./config");
+const { TENANT_ID, GRAPH_CLIENT_ID, GRAPH_CLIENT_SECRET, SP_SITE_ID, SP_OPENHOUSE_LIST_ID, SP_ADMINS_LIST_ID } = require("./config");
 
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
@@ -93,4 +93,40 @@ async function updateRegistrationItem(id, fields) {
   return res.json();
 }
 
-module.exports = { createRegistrationItem, listRegistrationItems, getRegistrationItem, updateRegistrationItem };
+const adminsListBase = () => `/sites/${SP_SITE_ID}/lists/${SP_ADMINS_LIST_ID}`;
+
+async function listAdminItems() {
+  const items = [];
+  let path = `${adminsListBase()}/items?expand=fields&$top=200`;
+  while (path) {
+    const res = await graphFetch(path);
+    const page = await res.json();
+    for (const item of page.value) items.push({ id: item.id, ...item.fields });
+    const nextLink = page["@odata.nextLink"];
+    path = nextLink ? nextLink.replace(GRAPH_BASE, "") : null;
+  }
+  return items;
+}
+
+async function createAdminItem(email) {
+  const res = await graphFetch(`${adminsListBase()}/items`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fields: { Title: email, Email: email } }),
+  });
+  return res.json();
+}
+
+async function deleteAdminItem(id) {
+  await graphFetch(`${adminsListBase()}/items/${id}`, { method: "DELETE" });
+}
+
+module.exports = {
+  createRegistrationItem,
+  listRegistrationItems,
+  getRegistrationItem,
+  updateRegistrationItem,
+  listAdminItems,
+  createAdminItem,
+  deleteAdminItem,
+};

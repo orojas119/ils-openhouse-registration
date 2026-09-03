@@ -1,5 +1,6 @@
 const { jwtVerify, createRemoteJWKSet } = require("jose");
-const { WEBAUTH_TENANT_ID, WEBAUTH_CLIENT_ID, ADMIN_EMAILS } = require("./config");
+const { WEBAUTH_TENANT_ID, WEBAUTH_CLIENT_ID } = require("./config");
+const { isAdmin } = require("./admins");
 
 const issuer = `https://login.microsoftonline.com/${WEBAUTH_TENANT_ID}/v2.0`;
 const jwks = createRemoteJWKSet(new URL(`https://login.microsoftonline.com/${WEBAUTH_TENANT_ID}/discovery/v2.0/keys`));
@@ -34,7 +35,7 @@ async function requireAdmin(request) {
   }
 
   const email = (payload.preferred_username || payload.upn || "").toLowerCase();
-  if (!ADMIN_EMAILS.includes(email)) {
+  if (!(await isAdmin(email))) {
     throw new AuthError(403, "Not authorized for the admin dashboard");
   }
   return { email };

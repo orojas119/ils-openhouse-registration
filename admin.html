@@ -74,6 +74,8 @@
   .user-name { font-size: 12.5px; font-weight: 600; color: white; }
   .btn-signout { padding: 6px 12px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 6px; color: rgba(255,255,255,.8); font-size: 12px; font-weight: 500; cursor: pointer; }
   .btn-signout:hover { background: rgba(255,255,255,.18); color: white; }
+  .btn-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); border-radius: 6px; font-size: 15px; cursor: pointer; transition: var(--transition); line-height: 1; }
+  .btn-icon:hover { background: rgba(255,255,255,.18); }
 
   .container { max-width: 1280px; margin: 0 auto; padding: 28px 20px 60px; }
 
@@ -119,6 +121,7 @@
   .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-100); font-size: 13.5px; }
   .detail-row .dl { color: var(--gray-600); }
   .detail-row .dv { font-weight: 600; text-align: right; }
+  .admin-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; background: var(--green-pale); border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-size: 13.5px; }
   .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
   .field label { font-size: 11.5px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: .4px; }
   .field input, .field select { padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 14.5px; outline: none; }
@@ -155,6 +158,7 @@
     </div>
     <div class="header-user">
       <span class="user-name" id="header-name"></span>
+      <button class="btn-icon" id="settings-btn" onclick="openSettingsModal()" title="Admin Settings">⚙️</button>
       <button class="btn-signout" onclick="signOut()">Sign Out</button>
     </div>
   </header>
@@ -219,6 +223,23 @@
     </div>
     <div class="field"><label>Parent Email</label><input type="email" id="wi-email"></div>
     <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitWalkIn()" id="wi-submit-btn">Add &amp; Check In</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-title"><span>Admin Settings</span><button class="modal-close" onclick="closeModal('settings-modal')">&times;</button></div>
+    <div class="modal-error" id="settings-error"></div>
+    <div style="font-size:12.5px; color:var(--gray-600); margin-bottom:16px;">People listed here can sign in and access this dashboard. Anyone with an @ilsroyals.com account can attempt to sign in, but only admins listed below get past that.</div>
+    <div id="admins-list" style="display:flex; flex-direction:column; gap:8px; margin-bottom:18px;"></div>
+    <div class="field-row2">
+      <div class="field" style="grid-column: span 2;">
+        <label>Add Admin (@ilsroyals.com)</label>
+        <input type="email" id="new-admin-email" placeholder="name@ilsroyals.com">
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitNewAdmin()" id="add-admin-btn">+ Add Admin</button>
   </div>
 </div>
 
@@ -462,6 +483,100 @@ async function submitWalkIn() {
 // ─── QR CODE ──────────────────────────────────────────────────────
 function openQrModal() {
   window.open(window.location.href.replace(/admin\.html.*$/, "qr.html"), "_blank");
+}
+
+// ─── ADMIN SETTINGS ───────────────────────────────────────────────
+async function openSettingsModal() {
+  document.getElementById('settings-error').classList.remove('show');
+  document.getElementById('new-admin-email').value = '';
+  document.getElementById('settings-modal').classList.add('show');
+  await loadAdmins();
+}
+
+let armedRemovalId = null;
+let lastAdminsData = [];
+
+async function loadAdmins() {
+  const listEl = document.getElementById('admins-list');
+  listEl.innerHTML = '<div style="font-size:13px; color:var(--gray-400);">Loading…</div>';
+  armedRemovalId = null;
+  try {
+    const res = await apiFetch("/staff/admins");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    lastAdminsData = data.admins;
+    renderAdminsList(lastAdminsData);
+  } catch (err) {
+    console.error(err);
+    listEl.innerHTML = '<div style="font-size:13px; color:var(--red);">Failed to load admins.</div>';
+  }
+}
+
+function armRemoveAdmin(id) {
+  armedRemovalId = id;
+  renderAdminsList(lastAdminsData);
+}
+
+function cancelRemoveAdmin() {
+  armedRemovalId = null;
+  renderAdminsList(lastAdminsData);
+}
+
+function renderAdminsList(admins) {
+  document.getElementById('admins-list').innerHTML = admins.map(a => {
+    if (a.isSuperAdmin) {
+      return `<div class="admin-row"><span>${a.email} <span class="badge badge-adom">Super Admin</span></span></div>`;
+    }
+    const armed = armedRemovalId === a.id;
+    return `
+      <div class="admin-row">
+        <span>${a.email}</span>
+        ${armed
+          ? `<span style="display:flex; gap:6px;">
+               <button class="btn btn-ghost btn-sm" onclick="cancelRemoveAdmin()">Cancel</button>
+               <button class="btn btn-sm" style="background:var(--red); color:#fff;" onclick="confirmRemoveAdmin('${a.id}')">Confirm Remove</button>
+             </span>`
+          : `<button class="btn btn-ghost btn-sm" onclick="armRemoveAdmin('${a.id}')">Remove</button>`}
+      </div>`;
+  }).join('');
+}
+
+async function submitNewAdmin() {
+  const email = document.getElementById('new-admin-email').value.trim();
+  const errEl = document.getElementById('settings-error');
+  errEl.classList.remove('show');
+  const btn = document.getElementById('add-admin-btn');
+  btn.disabled = true;
+  try {
+    const res = await apiFetch("/staff/admins", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "HTTP " + res.status);
+    document.getElementById('new-admin-email').value = '';
+    await loadAdmins();
+  } catch (err) {
+    errEl.textContent = err.message || 'Something went wrong adding this admin.';
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function confirmRemoveAdmin(id) {
+  armedRemovalId = null;
+  try {
+    const res = await apiFetch(`/staff/admins/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "HTTP " + res.status);
+    await loadAdmins();
+  } catch (err) {
+    const errEl = document.getElementById('settings-error');
+    errEl.textContent = err.message || 'Something went wrong removing this admin.';
+    errEl.classList.add('show');
+  }
 }
 
 function closeModal(id) {
