@@ -39,17 +39,31 @@
   .header-crest { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; border: 2px solid var(--gold); flex-shrink: 0; background: var(--white); }
   .header-crest img { width: 100%; height: 100%; object-fit: contain; }
   .header-text { flex: 1; }
-  .header-org { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; color: var(--gold); line-height: 1.25; }
+  .header-org { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; color: var(--gold); line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .header-title { font-size: 11.5px; color: rgba(255,255,255,.75); letter-spacing: .5px; text-transform: uppercase; margin-top: 1px; }
+  @media (max-width: 420px) {
+    .site-header { padding: 12px 14px; gap: 10px; }
+    .header-crest { width: 38px; height: 38px; }
+    .header-org { font-size: 13px; }
+    .header-title { font-size: 10px; }
+  }
 
   .container { max-width: 520px; margin: 0 auto; padding: 32px 16px 60px; }
   .card { background: var(--white); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); }
   .card-title { font-family: 'Poppins', sans-serif; font-size: 20px; font-weight: 700; color: var(--green); margin-bottom: 6px; }
   .card-sub { font-size: 13.5px; color: var(--gray-600); margin-bottom: 22px; }
+  @media (max-width: 420px) {
+    .container { padding: 20px 10px 48px; }
+    .card { padding: 20px 16px; }
+  }
 
   .search-row { display: flex; gap: 10px; }
-  .search-row input { flex: 1; padding: 14px 16px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 16px; outline: none; transition: var(--transition); }
+  .search-row input { flex: 1; min-width: 0; padding: 14px 16px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 16px; outline: none; transition: var(--transition); }
   .search-row input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,75,35,.1); }
+  @media (max-width: 360px) {
+    .search-row { flex-direction: column; }
+    .search-row button { width: 100%; }
+  }
   .btn { padding: 14px 22px; border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: var(--transition); }
   .btn-primary { background: var(--green); color: var(--white); }
   .btn-primary:hover { background: var(--green-mid); }
@@ -63,10 +77,11 @@
 
   #results { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
   .result-card { border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); padding: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; transition: var(--transition); }
+  .result-info { min-width: 0; }
   .result-card:hover { border-color: var(--green); background: var(--green-pale); }
   .result-name { font-weight: 700; color: var(--gray-800); font-size: 15px; }
   .result-meta { font-size: 12.5px; color: var(--gray-600); margin-top: 3px; }
-  .result-badge { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--green-mid); background: var(--green-light); padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+  .result-badge { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--green-mid); background: var(--green-light); padding: 3px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
   .no-results { text-align: center; color: var(--gray-400); font-size: 14px; padding: 20px 0; }
 
   #confirm-screen, #success-screen { display: none; }
@@ -164,7 +179,7 @@ async function doSearch() {
     }
     resultsEl.innerHTML = data.results.map((r, i) => `
       <div class="result-card" onclick="selectResult(${i})">
-        <div>
+        <div class="result-info">
           <div class="result-name">${r.studentFirstName} ${r.studentLastName}</div>
           <div class="result-meta">${r.gradeLevel || ''}${r.schoolAttending ? ' · ' + r.schoolAttending : ''}</div>
         </div>

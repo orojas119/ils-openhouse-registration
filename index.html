@@ -42,8 +42,14 @@
   .header-crest { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; border: 2px solid var(--gold); flex-shrink: 0; background: var(--white); }
   .header-crest img { width: 100%; height: 100%; object-fit: contain; }
   .header-text { flex: 1; }
-  .header-org { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; color: var(--gold); line-height: 1.25; letter-spacing: .2px; }
+  .header-org { font-family: 'Poppins', sans-serif; font-size: 15px; font-weight: 700; color: var(--gold); line-height: 1.25; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .header-title { font-size: 11.5px; color: rgba(255,255,255,.75); letter-spacing: .5px; text-transform: uppercase; margin-top: 1px; }
+  @media (max-width: 420px) {
+    .site-header { padding: 12px 14px; gap: 10px; }
+    .header-crest { width: 38px; height: 38px; }
+    .header-org { font-size: 13px; }
+    .header-title { font-size: 10px; }
+  }
 
   /* LAYOUT */
   .container { max-width: 760px; margin: 0 auto; padding: 32px 16px 60px; }
@@ -67,6 +73,10 @@
   .form-step.active { display: block; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
   .card { background: var(--white); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; box-shadow: var(--shadow-sm); border: 1px solid var(--gray-200); }
+  @media (max-width: 420px) {
+    .container { padding: 20px 10px 48px; }
+    .card { padding: 20px 16px; }
+  }
   .card-title { font-family: 'Poppins', sans-serif; font-size: 19px; font-weight: 700; color: var(--green); margin-bottom: 4px; }
   .card-sub { font-size: 13px; color: var(--gray-600); margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--gray-100); }
 
@@ -99,6 +109,10 @@
 
   /* Buttons */
   .nav-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; }
+  @media (max-width: 480px) {
+    .nav-row { flex-direction: column; align-items: stretch; }
+    .nav-row .btn { width: 100%; justify-content: center; }
+  }
   .btn { padding: 13px 28px; border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 14.5px; font-weight: 600; cursor: pointer; border: none; transition: var(--transition); display: flex; align-items: center; gap: 8px; }
   .btn-ghost { background: var(--white); color: var(--gray-600); border: 1.5px solid var(--gray-200); }
   .btn-ghost:hover { background: var(--gray-50); border-color: var(--gray-400); }
@@ -222,7 +236,7 @@
       <div class="field-row single">
         <div class="field" id="f-schoolAttending">
           <label>School CURRENTLY Attending<span class="req">*</span></label>
-          <input type="text" id="schoolAttending" list="schools-list" placeholder="Start typing a school name…" autocomplete="off">
+          <input type="text" id="schoolAttending" list="schools-list" placeholder="Type school name…" autocomplete="off">
           <datalist id="schools-list"></datalist>
           <div class="hint">Not listed? Just type the school's name.</div>
           <div class="err-msg">Please enter the student's current school.</div>
@@ -368,7 +382,7 @@
       <div class="card-title">Review &amp; Submit</div>
       <div class="card-sub">Please confirm everything below is correct before submitting.</div>
       <div id="review-content"></div>
-      <div class="cf-turnstile" id="turnstile-widget" data-sitekey="0x4AAAAAAEl-8LJPCEUw1VvF" style="margin:16px 0;"></div>
+      <div class="cf-turnstile" id="turnstile-widget" data-sitekey="0x4AAAAAAEl-8LJPCEUw1VvF" data-size="flexible" style="margin:16px 0;"></div>
       <div class="nav-row">
         <button class="btn btn-ghost" onclick="goTo(2)">← Back</button>
         <button class="btn btn-primary btn-submit" id="submit-btn" onclick="submitForm()">Submit Registration</button>
