@@ -396,6 +396,21 @@ scan a QR code and check themselves in rather than staff doing it manually.
   Consumption-plan instances are ephemeral, revisit if this ever needs to
   survive real abuse).
 
+**CSV export (added 2026-09-03):** "⬇ Export CSV" button next to "Open QR
+Code Page" exports the currently filtered/searched roster — Last Name,
+First Name, Grade, School, ADOM School, Guests, Heard About, Checked In,
+Checked In At, Walk-In. Pure client-side (`exportCsv()` in `admin.html`)
+from data already loaded into `allRegistrations`, no new backend endpoint.
+`Status`'s two badges are split into separate `Checked In`/`Checked In At`/
+`Walk-In` columns since a badge isn't meaningful as plain spreadsheet text.
+Originally asked to match a reference spreadsheet
+(morelle's "2025-26 Open House Check In.xlsx" on her personal OneDrive) but
+that file was inaccessible — the shared iHelp Graph app's SharePoint
+permission is `Sites.Selected`, scoped only to the `ilsforms` site used
+elsewhere in this project, not her OneDrive — and orojas chose to just
+match the dashboard's own columns instead of granting broader access for a
+one-time reference lookup.
+
 **Admin dashboard sign-in app** — `ILS-OpenHouse-Admin-WebAuth`
 - App (client) ID: `c8cb8dd4-153c-428b-aca0-c2c3e8a74f5b`, tenant
   `8109e949-d281-46a4-af75-b18087925bf4` (dedicated app, separate from the
