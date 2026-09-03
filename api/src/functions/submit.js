@@ -1,6 +1,14 @@
 const { app } = require("@azure/functions");
 const { corsHeaders } = require("../lib/cors");
 const { createRegistrationItem } = require("../lib/graph");
+const { allow } = require("../lib/ratelimit");
+const { verifyTurnstile } = require("../lib/turnstile");
+
+// A real 3-step form takes real humans well over this long to fill out —
+// anything submitted faster almost certainly skipped the UI entirely
+// (a bot POSTing straight to the endpoint). Cheap, no-dependency signal
+// layered alongside the honeypot, rate limit, and Turnstile below.
+const MIN_FILL_MS = 4000;
 
 const REQUIRED_STUDENT_FIELDS = [
   "studentFirstName",
@@ -36,6 +44,10 @@ app.http("submitOpenHouse", {
       return { status: 204, headers };
     }
 
+    if (!allow(request, { max: 10 })) {
+      return { status: 429, headers, jsonBody: { error: "Too many submissions, please try again in a minute." } };
+    }
+
     try {
       const body = await request.json();
 
@@ -43,6 +55,20 @@ app.http("submitOpenHouse", {
       // every input trip this; report success without writing anything.
       if (body.website) {
         return { status: 200, headers, jsonBody: { success: true } };
+      }
+
+      // Fill-time check: formLoadedAt is stamped client-side when the page
+      // loads. A submission arriving faster than a human could plausibly
+      // complete a 3-step form is treated as a bot — reported as success
+      // (same as the honeypot) so a scraper doesn't learn which signal caught it.
+      const formLoadedAt = Number(body.formLoadedAt);
+      if (!formLoadedAt || Date.now() - formLoadedAt < MIN_FILL_MS) {
+        return { status: 200, headers, jsonBody: { success: true } };
+      }
+
+      const turnstileOk = await verifyTurnstile(body.turnstileToken, request.headers.get("x-forwarded-for"));
+      if (!turnstileOk) {
+        return { status: 400, headers, jsonBody: { error: "Bot verification failed. Please reload the page and try again." } };
       }
 
       for (const f of [...REQUIRED_STUDENT_FIELDS, ...REQUIRED_PARENT_FIELDS]) {

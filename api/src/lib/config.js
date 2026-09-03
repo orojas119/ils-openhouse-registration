@@ -22,4 +22,10 @@ module.exports = {
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean),
+
+  // Cloudflare Turnstile (bot protection on the public registration form).
+  // TURNSTILE_SECRET_KEY is intentionally unset until orojas provisions the
+  // widget — submit.js skips verification entirely when it's blank, so the
+  // form keeps working during rollout instead of hard-failing.
+  TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY || "",
 };

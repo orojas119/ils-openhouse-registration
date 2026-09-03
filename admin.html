@@ -8,7 +8,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.0/lib/msal-browser.min.js"></script>
-<script src="assets/qrcode.min.js"></script>
 <style>
   :root {
     --green:       #004B23;
@@ -124,8 +123,6 @@
   .field label { font-size: 11.5px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: .4px; }
   .field input, .field select { padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 14.5px; outline: none; }
   .field-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  #qr-container { display: flex; justify-content: center; padding: 20px; background: var(--white); }
-  .qr-url { text-align: center; font-size: 12px; color: var(--gray-400); word-break: break-all; margin-top: 10px; }
   .modal-error { background: var(--red-light); color: var(--red); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-bottom: 12px; display: none; }
   .modal-error.show { display: block; }
 </style>
@@ -168,7 +165,7 @@
     <div class="toolbar">
       <input type="text" id="filter-input" placeholder="Search by name or school…" oninput="renderTable()">
       <button class="btn btn-ghost" onclick="loadRegistrations()">↻ Refresh</button>
-      <button class="btn btn-ghost" onclick="openQrModal()">Show QR Code</button>
+      <button class="btn btn-ghost" onclick="openQrModal()">Open QR Code Page ↗</button>
       <button class="btn btn-primary" onclick="openWalkInModal()">+ Walk-In Registration</button>
     </div>
 
@@ -222,15 +219,6 @@
     </div>
     <div class="field"><label>Parent Email</label><input type="email" id="wi-email"></div>
     <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitWalkIn()" id="wi-submit-btn">Add &amp; Check In</button>
-  </div>
-</div>
-
-<!-- QR MODAL -->
-<div class="modal-overlay" id="qr-modal">
-  <div class="modal">
-    <div class="modal-title"><span>Self Check-In QR Code</span><button class="modal-close" onclick="closeModal('qr-modal')">&times;</button></div>
-    <div id="qr-container"></div>
-    <div class="qr-url" id="qr-url"></div>
   </div>
 </div>
 
@@ -471,14 +459,9 @@ async function submitWalkIn() {
   }
 }
 
-// ─── QR MODAL ─────────────────────────────────────────────────────
+// ─── QR CODE ──────────────────────────────────────────────────────
 function openQrModal() {
-  const qr = qrcode(0, 'M');
-  qr.addData(CHECKIN_URL);
-  qr.make();
-  document.getElementById('qr-container').innerHTML = qr.createSvgTag(6);
-  document.getElementById('qr-url').textContent = CHECKIN_URL;
-  document.getElementById('qr-modal').classList.add('show');
+  window.open(window.location.href.replace(/admin\.html.*$/, "qr.html"), "_blank");
 }
 
 function closeModal(id) {

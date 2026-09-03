@@ -44,10 +44,8 @@ uses.
   form marked it required alongside the other two, but orojas confirmed
   relaxing this), E-Mail*
 
-Public intake form → has a honeypot field (`website`, off-screen, checked
-server-side in `submit.js`) since there's no auth gate to deter spam. No
-Turnstile/rate-limiting yet — add once real traffic starts, per the standard
-playbook guidance for public forms.
+Public intake form → layered bot defenses added 2026-09-03 (see below):
+honeypot, per-IP rate limiting, a fill-time check, and Cloudflare Turnstile.
 
 ## School list — `schools-data.js`
 
@@ -130,6 +128,51 @@ this as authoritative):
 record pointing at `orojas119.github.io`, matching `drivermvr.ilsroyals.com`.
 HTTPS certificate issued and enforced; verified `index.html`, `checkin.html`,
 and `admin.html` all load correctly and sign-in works over the real domain.
+
+## Bot protection + shareable QR page (added 2026-09-03)
+
+**Layered defenses on `POST /api/submit`** (registration form only — the
+`checkin/search|complete` endpoints already had rate limiting from day one):
+1. **Honeypot** (`website` field) — unchanged from launch.
+2. **Per-IP rate limit** — 10/min, `api/src/lib/ratelimit.js` (in-memory,
+   best-effort per Consumption-plan caveats already noted there).
+3. **Fill-time check** — `index.html` stamps `FORM_LOADED_AT = Date.now()`
+   on page load and sends it as `formLoadedAt`; `submit.js` silently
+   no-ops (`{success:true}`, no SharePoint write) if the submission arrives
+   less than `MIN_FILL_MS` (4000ms) after load — a real 3-step form takes
+   humans far longer, so this catches direct-to-API bots without needing
+   the honeypot to be naive enough to fill every field. Silent, not a 4xx,
+   so a scraper can't distinguish which layer caught it.
+4. **Cloudflare Turnstile** — real bot-vs-human verification. Widget
+   (`0x4AAAAAAEl-8LJPCEUw1VvF`, Managed mode) sits on the Review step;
+   `submit.js` verifies the token server-side via
+   `api/src/lib/turnstile.js` against `challenges.cloudflare.com/turnstile/v0/siteverify`
+   using `TURNSTILE_SECRET_KEY` (Function App setting only, never
+   committed). **Verification is skipped entirely if
+   `TURNSTILE_SECRET_KEY` is unset** — lets the form keep working if the
+   widget ever needs to be pulled/reprovisioned without a code change.
+
+Verified all three layers reject bot-shaped requests end-to-end against the
+live endpoint (missing `formLoadedAt`, too-fast `formLoadedAt`, and a valid
+timing but missing Turnstile token — first two silently no-op, the third
+gets an explicit 400) while a real browser submission (Turnstile
+auto-passing in Managed mode, realistic fill time) still succeeds. No bot
+attempt created a SharePoint item; the one real test submission was deleted
+after confirming its fields.
+
+**Shareable QR page — `qr.html`.** Public, no sign-in, full ILS branding,
+large QR code linking to `checkin.html` with **the ILS crest embedded in
+the center** — a cropped/padded version of the shield (`assets/crest-mark.png`,
+generated from `assets/crest.png` via Pillow, not committed as a build step)
+composited into a custom-rendered SVG (not the library's `createSvgTag()`,
+which doesn't support a center image) using `qrcode-generator`'s
+`isDark()`/`getModuleCount()` directly, at error-correction level **H**
+(tolerates ~30% obstruction — the logo + white backing covers ~26%).
+**Verified the logo doesn't break scannability** by screenshotting the
+rendered code and decoding it with OpenCV's `QRCodeDetector` in a throwaway
+venv — decoded back to the exact `checkin.html` URL. `admin.html`'s
+"Show QR Code" button now just opens this page in a new tab instead of
+duplicating QR-rendering logic in a modal (the old modal/logic was removed).
 
 ## Admin dashboard + self-service check-in (added 2026-09-02)
 

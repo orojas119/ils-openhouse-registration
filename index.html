@@ -7,6 +7,7 @@
 <link rel="icon" href="assets/crest.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <style>
   :root {
     --green:       #004B23;
@@ -367,6 +368,7 @@
       <div class="card-title">Review &amp; Submit</div>
       <div class="card-sub">Please confirm everything below is correct before submitting.</div>
       <div id="review-content"></div>
+      <div class="cf-turnstile" id="turnstile-widget" data-sitekey="0x4AAAAAAEl-8LJPCEUw1VvF" style="margin:16px 0;"></div>
       <div class="nav-row">
         <button class="btn btn-ghost" onclick="goTo(2)">← Back</button>
         <button class="btn btn-primary btn-submit" id="submit-btn" onclick="submitForm()">Submit Registration</button>
@@ -393,6 +395,7 @@ const GRADE_OPTIONS = ["5th Grade","6th Grade","7th Grade","8th Grade","9th Grad
 const US_STATES = ["FL","AL","AK","AZ","AR","CA","CO","CT","DE","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
 
 let currentStep = 1;
+const FORM_LOADED_AT = Date.now();
 
 // ─── INIT ─────────────────────────────────────────────────────────
 function init() {
@@ -511,6 +514,14 @@ async function submitForm() {
     if (!validate(2)) { goTo(2); return; }
   }
 
+  const turnstileToken = (typeof turnstile !== 'undefined') ? turnstile.getResponse('#turnstile-widget') : '';
+  if (document.getElementById('turnstile-widget').hasChildNodes() && !turnstileToken) {
+    document.getElementById('error-banner').textContent = '⚠ Please complete the verification check above before submitting.';
+    document.getElementById('error-banner').classList.add('show');
+    window.scrollTo({top:0, behavior:'smooth'});
+    return;
+  }
+
   const isADOM = !document.getElementById('f-powerSchoolNumber').classList.contains('hidden-field');
   const payload = {
     studentFirstName: v('studentFirstName'),
@@ -538,6 +549,8 @@ async function submitForm() {
     officePhone: v('officePhone'),
     email: v('email'),
     website: document.getElementById('website').value, // honeypot
+    formLoadedAt: FORM_LOADED_AT,
+    turnstileToken,
   };
 
   const btn = document.getElementById('submit-btn');
@@ -549,6 +562,7 @@ async function submitForm() {
     showSuccess();
   } catch (err) {
     console.error(err);
+    document.getElementById('error-banner').textContent = "⚠ Something went wrong submitting your registration. Please try again — if the problem continues, contact the school's admissions office.";
     document.getElementById('error-banner').classList.add('show');
     btn.disabled = false;
     window.scrollTo({top:0, behavior:'smooth'});

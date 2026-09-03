@@ -10,7 +10,8 @@
     "SP_OPENHOUSE_LIST_ID": "a56759e2-08e0-44f2-a7ce-5bda2c94f119",
     "ALLOWED_ORIGINS": "http://localhost:8935,https://orojas119.github.io,https://openhouse.ilsroyals.com",
     "WEBAUTH_CLIENT_ID": "c8cb8dd4-153c-428b-aca0-c2c3e8a74f5b",
-    "ADMIN_EMAILS": "orojas@ilsroyals.com,morelle@ilsroyals.com"
+    "ADMIN_EMAILS": "orojas@ilsroyals.com,morelle@ilsroyals.com",
+    "TURNSTILE_SECRET_KEY": "<Cloudflare Turnstile secret key>"
   },
   "Host": {
     "CORS": "*"
