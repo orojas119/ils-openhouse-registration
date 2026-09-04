@@ -127,6 +127,8 @@
   .field label { font-size: 11.5px; font-weight: 600; color: var(--gray-600); text-transform: uppercase; letter-spacing: .4px; }
   .field input, .field select { padding: 10px 12px; border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm); font-family: 'Montserrat', sans-serif; font-size: 14.5px; outline: none; }
   .field-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field.hidden-field { display: none; }
+  .field .hint { font-size: 11.5px; color: var(--gray-400); text-transform: none; font-weight: 400; letter-spacing: 0; }
   .modal-error { background: var(--red-light); color: var(--red); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; margin-bottom: 12px; display: none; }
   .modal-error.show { display: block; }
 </style>
@@ -218,7 +220,15 @@
       </div>
       <div class="field"><label># Attending*</label><input type="number" id="wi-guests" min="1"></div>
     </div>
-    <div class="field"><label>School Attending</label><input type="text" id="wi-school"></div>
+    <div class="field">
+      <label>School Attending</label>
+      <input type="text" id="wi-school" list="wi-schools-list" placeholder="Type school name…" autocomplete="off">
+    </div>
+    <div class="field hidden-field" id="wi-f-ps">
+      <label>Current PowerSchool #</label>
+      <input type="text" id="wi-ps" inputmode="numeric">
+      <div class="hint">This school is part of the Archdiocese of Miami — please provide the student's PowerSchool #.</div>
+    </div>
     <div class="field-row2">
       <div class="field"><label>Parent First Name</label><input type="text" id="wi-pfirst"></div>
       <div class="field"><label>Parent Last Name</label><input type="text" id="wi-plast"></div>
@@ -227,6 +237,7 @@
     <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="submitWalkIn()" id="wi-submit-btn">Add &amp; Check In</button>
   </div>
 </div>
+<datalist id="wi-schools-list"></datalist>
 
 <!-- SETTINGS MODAL -->
 <div class="modal-overlay" id="settings-modal">
@@ -245,6 +256,7 @@
   </div>
 </div>
 
+<script src="schools-data.js"></script>
 <script>
 // ─── CONFIG ───────────────────────────────────────────────────────
 const API_BASE = "https://func-openhouse.azurewebsites.net/api";
@@ -504,18 +516,33 @@ function openDetailModal(id) {
 }
 
 // ─── WALK-IN MODAL ────────────────────────────────────────────────
+const wiSchoolsList = document.getElementById('wi-schools-list');
+(typeof SCHOOLS !== 'undefined' ? SCHOOLS : []).forEach(s => wiSchoolsList.appendChild(new Option(s.name)));
+
+document.getElementById('wi-school').addEventListener('input', (e) => {
+  const match = (typeof SCHOOLS !== 'undefined' ? SCHOOLS : []).find(
+    (s) => s.name.toLowerCase() === e.target.value.trim().toLowerCase()
+  );
+  const isADOM = !!(match && match.isADOM);
+  document.getElementById('wi-f-ps').classList.toggle('hidden-field', !isADOM);
+  if (!isADOM) document.getElementById('wi-ps').value = '';
+});
+
 function openWalkInModal() {
-  ['wi-first','wi-last','wi-grade','wi-guests','wi-school','wi-pfirst','wi-plast','wi-email'].forEach(id => document.getElementById(id).value = '');
+  ['wi-first','wi-last','wi-grade','wi-guests','wi-school','wi-ps','wi-pfirst','wi-plast','wi-email'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('wi-f-ps').classList.add('hidden-field');
   document.getElementById('walkin-error').classList.remove('show');
   document.getElementById('walkin-modal').classList.add('show');
 }
 
 async function submitWalkIn() {
   const v = (id) => document.getElementById(id).value.trim();
+  const isADOM = !document.getElementById('wi-f-ps').classList.contains('hidden-field');
   const payload = {
     studentFirstName: v('wi-first'), studentLastName: v('wi-last'),
     gradeLevel: v('wi-grade'), attendeeCount: v('wi-guests'),
     schoolAttending: v('wi-school'),
+    isADOMSchool: isADOM, powerSchoolNumber: isADOM ? v('wi-ps') : '',
     parentFirstName: v('wi-pfirst'), parentLastName: v('wi-plast'), email: v('wi-email'),
   };
   if (!payload.studentFirstName || !payload.studentLastName || !payload.gradeLevel || !payload.attendeeCount) {
