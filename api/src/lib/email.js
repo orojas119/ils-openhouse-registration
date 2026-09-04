@@ -6,6 +6,9 @@ const { sendMail } = require("./graph");
 const EVENT_NAME = "ILS Open House";
 const EVENT_DATE_LABEL = "Saturday, October 17, 2026";
 const EVENT_TIME_LABEL = "8:00 AM – 1:00 PM";
+const ADMISSIONS_CONTACT_EMAIL = "admissions@ilsroyals.com";
+const APPLY_URL = "https://www.ilsroyals.com/admissions";
+const ENTRANCE_EXAM_DATE_LABEL = "Saturday, December 5th";
 // Oct 17, 2026 falls during EDT (UTC-4) — 8am/1pm Eastern in plain UTC,
 // avoids needing a VTIMEZONE block for calendar apps to interpret correctly.
 const EVENT_START_UTC = "20261017T120000Z";
@@ -80,8 +83,11 @@ async function sendConfirmationEmail({ submissionId, students, parentFirstName, 
       <div style="background:#fff;padding:28px 24px;border-radius:0 0 8px 8px;">
         <h2 style="color:${GREEN};margin:0 0 16px;">You're registered for the ${EVENT_NAME}!</h2>
         <p>Dear ${parentFirstName} ${parentLastName},</p>
-        <p>Thank you for registering the following student(s):</p>
+        <p>Thank you for registering the following student(s) to our Open House:</p>
         <ul>${studentRows}</ul>
+        <p>If you have any questions, please do not hesitate to reach out to Ms. Vargas at <a href="mailto:${ADMISSIONS_CONTACT_EMAIL}" style="color:${GREEN};">${ADMISSIONS_CONTACT_EMAIL}</a>.</p>
+        <p>To apply to Immaculata-La Salle High School, please <a href="${APPLY_URL}" style="color:${GREEN};font-weight:bold;">click here</a>.<br>
+        <strong style="color:${GREEN};">Entrance Exam:</strong> ${ENTRANCE_EXAM_DATE_LABEL}.</p>
         <p style="background:${GREEN_PALE};border-left:4px solid ${GOLD};padding:12px 16px;border-radius:4px;">
           <strong style="color:${GREEN};">Date:</strong> ${EVENT_DATE_LABEL}<br>
           <strong style="color:${GREEN};">Time:</strong> ${EVENT_TIME_LABEL}<br>
@@ -98,7 +104,7 @@ async function sendConfirmationEmail({ submissionId, students, parentFirstName, 
           </tr>
         </table>
         <p style="font-size:12px;color:#777;">A calendar invite is also attached — open it to add this event to Outlook or any other calendar app.</p>
-        <p>We look forward to seeing you and your family!</p>
+        <p>We look forward to seeing you and your family on Saturday, October 17th!</p>
         <p style="color:${GREEN};font-weight:bold;">Immaculata-La Salle High School</p>
       </div>
     </div>`;
